@@ -3,7 +3,10 @@
 A ten-mission vibe-coding curriculum for a nine-year-old, plus one setup unit.
 Single HTML file, no build step, no dependencies.
 
-**Live site:** `https://<your-username>.github.io/samuel-coding-studio/`
+**Working on this with Claude Code?** Read `CLAUDE.md` first, then `docs/redesign-spec.md`
+for the next piece of work. `docs/decisions.md` records what has already been settled and why.
+
+**Live site:** https://sckang0911.github.io/SamuelCoding/
 
 ---
 
@@ -38,13 +41,29 @@ Then enable Pages as in step 3.
 - **Mission 01 · The Atom Factory** — full brief: electron shells (2 then 8), six build steps with prompts, a patch-note box.
 - **Missions 02–10** — goal, skill, and opening prompt. Full briefs get written before each class.
 
-## Where progress is stored
+## The learning log
 
-Everything is kept on the device in browser storage — studio name, checked steps, patch notes, WPM history.
-Nothing is uploaded anywhere and there is no account.
+The bottom of the page keeps a record of every session, written automatically:
 
-Consequences worth knowing: a different device starts empty, and clearing browser data wipes the history.
-For a weekly class on one tablet or laptop, that is fine.
+- **Date** — one row per day worked
+- **WPM** — that day's speed test, green once it reaches 30
+- **What happened** — units opened, bricks earned, and the patch note he wrote
+- **Four totals** — sessions, best WPM, last-three average, games built
+
+*Add a session from an earlier day* backfills history by hand, so scores recorded before
+the site existed can still go in.
+
+## Where progress is stored, and how to keep it
+
+Everything is kept on the device in browser storage. Nothing is uploaded and there is no account.
+So: a different device starts empty, and clearing browser data wipes the history.
+
+**Download backup** saves a file named `samuel-coding-log-YYYY-MM-DD.json` containing the whole log.
+**Restore from backup** loads it onto any device, replacing what's there.
+
+A reasonable habit: download a backup at the end of each session and keep the file
+in Drive, or commit it to a `backups/` folder in this repo. Committing it means the history
+is versioned and survives any device.
 
 ## Adding a mission brief
 

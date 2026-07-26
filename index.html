@@ -118,6 +118,41 @@
   .nudge{animation:nudge .4s ease}
   @keyframes nudge{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 
+  /* learning log */
+  .logbook{margin-top:44px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .stat{background:var(--plate);border:var(--rule);box-shadow:var(--pop-sm);padding:12px 14px}
+  .stat b{font-family:var(--display);font-size:32px;line-height:1;display:block}
+  .stat span{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+  .rows{background:var(--plate);border:var(--rule);box-shadow:var(--pop-sm)}
+  .row{display:grid;grid-template-columns:112px 78px 1fr;gap:14px;padding:12px 16px;border-bottom:2px solid var(--paper);align-items:start}
+  .row:last-child{border-bottom:none}
+  .row .date{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.04em}
+  .row .wpm{font-family:var(--display);font-size:20px;line-height:1}
+  .row .wpm small{font-family:var(--mono);font-size:9px;letter-spacing:.14em;display:block;color:var(--ink-soft);font-weight:700}
+  .row .wpm.pass{color:var(--green)}
+  .row .what{font-size:15px}
+  .row .what em{color:var(--ink-soft);font-style:normal}
+  .tag{
+    display:inline-block;border:2px solid var(--ink);background:var(--paper);
+    font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    padding:3px 7px;margin:0 4px 4px 0;
+  }
+  .tag.brick{background:var(--green);color:var(--plate);border-color:var(--green)}
+  .row .note{font-family:var(--mono);font-size:12px;background:var(--paper);border-left:6px solid var(--yellow);padding:7px 10px;margin-top:6px}
+  .empty{padding:22px 16px;font-family:var(--mono);font-size:13px;color:var(--ink-soft)}
+  details.backfill{margin-top:14px;border:2px dashed var(--ink);padding:12px 16px;background:var(--plate)}
+  details.backfill summary{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;cursor:pointer}
+  .fields{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:14px}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field label{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+  .field input,.field select{font-family:var(--mono);font-size:14px;border:2px solid var(--ink);padding:7px 8px;background:var(--paper);color:var(--ink)}
+  .field.grow{flex:1;min-width:190px}
+  .field.grow input{width:100%}
+  .io{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+  .io .type-it{flex:1;min-width:200px}
+  label.mini{display:inline-block}
+
   /* tower */
   .tower-wrap{margin:34px 0 10px}
   .sec-label{
@@ -297,6 +332,45 @@
 
   <section class="brief" id="brief" tabindex="-1"></section>
 
+  <section class="logbook">
+    <div class="sec-label"><span>Learning log</span><span class="count" id="logCount">No sessions yet</span></div>
+    <div class="stats" id="stats"></div>
+    <div class="rows" id="logRows"></div>
+
+    <details class="backfill">
+      <summary>Add a session from an earlier day</summary>
+      <div class="fields">
+        <div class="field"><label for="bfDate">Date</label><input id="bfDate" type="date"></div>
+        <div class="field"><label for="bfWpm">WPM</label><input id="bfWpm" type="number" min="1" max="200" style="width:80px"></div>
+        <div class="field"><label for="bfUnit">Unit worked on</label>
+          <select id="bfUnit">
+            <option value="">None</option>
+            <option value="0">00 · Know Your Studio</option>
+            <option value="1">01 · The Atom Factory</option>
+            <option value="2">02 · Brick Catcher</option>
+            <option value="3">03 · Meteor Dodge</option>
+            <option value="4">04 · Extreme Table Tennis</option>
+            <option value="5">05 · Science Memory Match</option>
+            <option value="6">06 · Angry Blocks</option>
+            <option value="7">07 · Typing Defender</option>
+            <option value="8">08 · Laser Maze Runner</option>
+            <option value="9">09 · T-Rex Dash</option>
+            <option value="10">10 · Tower Climber</option>
+          </select>
+        </div>
+        <div class="field grow"><label for="bfNote">What happened</label><input id="bfNote" type="text" placeholder="Built the atom clicker, got to neon"></div>
+        <button class="mini" id="bfAdd">Add to log</button>
+      </div>
+    </details>
+
+    <div class="io">
+      <span class="type-it">The log lives on this device only. Download a backup to keep it safe or move it to another device.</span>
+      <button class="mini" id="exportBtn">Download backup</button>
+      <label class="mini" for="importFile" tabindex="0">Restore from backup</label>
+      <input id="importFile" type="file" accept="application/json,.json" hidden>
+    </div>
+  </section>
+
   <footer>
     Producer types every prompt. Lead developer writes every line of code.<br>
     Eleven units, ten bricks, one studio.
@@ -404,7 +478,7 @@ const ALL = [UNIT0, ...MISSIONS];
 
 /* ---------------- state ---------------- */
 const KEY = "samuel-coding-studio-v1";
-let S = { studio:"SAMUEL CODING STUDIO", done:[], steps:{}, notes:{}, wpm:[] };
+let S = { studio:"SAMUEL CODING STUDIO", done:[], steps:{}, notes:{}, wpm:[], activity:{} };
 let openUnit = null;
 
 /* Works in two homes: inside Claude it uses the artifact store,
@@ -429,6 +503,7 @@ async function load(){
   }catch(e){ /* first run, or storage unavailable — carry on with defaults */ }
   // older saves stored plain numbers; give them a date so the daily check still works
   S.wpm = (S.wpm||[]).map(e => typeof e === "number" ? {d:"earlier", v:e} : e);
+  S.activity = S.activity || {};
   render();
 }
 let saveTimer;
@@ -559,6 +634,134 @@ document.getElementById("resetBtn").onclick=()=>{
   document.getElementById("startBtn").textContent="Start"; paintTimer();
 };
 
+/* ---------------- learning log ---------------- */
+function unitName(n){
+  const u=ALL.find(x=>x.n===+n);
+  return u ? (u.zero?"00":String(u.n).padStart(2,"0"))+" · "+u.title : "Unit "+n;
+}
+function day(d){
+  if(!S.activity[d]) S.activity[d]={units:[],bricks:[],notes:[]};
+  return S.activity[d];
+}
+/* called whenever real work happens, so the log writes itself */
+function touch(unit, opts){
+  const a=day(today());
+  if(unit!==undefined && !a.units.includes(+unit)) a.units.push(+unit);
+  if(opts && opts.brick!==undefined && !a.bricks.includes(+opts.brick)) a.bricks.push(+opts.brick);
+  if(opts && opts.note!==undefined){
+    a.notes=a.notes.filter(x=>x.u!==+unit);
+    if(opts.note.trim()) a.notes.push({u:+unit, t:opts.note.trim()});
+  }
+  save();
+}
+
+function sessionDates(){
+  const set=new Set([...(S.wpm||[]).map(e=>e.d), ...Object.keys(S.activity||{})]);
+  return [...set].sort((a,b)=>{
+    if(a==="earlier") return 1;
+    if(b==="earlier") return -1;
+    return b.localeCompare(a);
+  });
+}
+function prettyDate(d){
+  if(d==="earlier") return "Earlier";
+  const [y,m,dd]=d.split("-").map(Number);
+  const dt=new Date(y,m-1,dd);
+  return dt.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})+
+    (dt.getFullYear()!==new Date().getFullYear()?" "+dt.getFullYear():"");
+}
+
+function renderLog(){
+  const dates=sessionDates();
+  const wpmAll=(S.wpm||[]).map(e=>e.v);
+  const best=wpmAll.length?Math.max(...wpmAll):0;
+  const recent=(S.wpm||[]).slice(-3).map(e=>e.v);
+  const avg=recent.length?Math.round(recent.reduce((a,b)=>a+b,0)/recent.length):0;
+
+  document.getElementById("stats").innerHTML=`
+    <div class="stat"><b>${dates.length}</b><span>Sessions</span></div>
+    <div class="stat"><b>${best||"—"}</b><span>Best WPM</span></div>
+    <div class="stat"><b>${avg||"—"}</b><span>Last 3 average</span></div>
+    <div class="stat"><b>${S.done.filter(n=>n>0).length}</b><span>Games built</span></div>`;
+
+  document.getElementById("logCount").textContent =
+    dates.length ? dates.length+(dates.length===1?" session":" sessions")+" recorded" : "No sessions yet";
+
+  const box=document.getElementById("logRows");
+  if(!dates.length){
+    box.innerHTML=`<div class="empty">Nothing here yet. Log a speed test and the first session appears automatically.</div>`;
+    return;
+  }
+  box.innerHTML=dates.map(d=>{
+    const w=(S.wpm||[]).find(e=>e.d===d);
+    const a=S.activity[d]||{units:[],bricks:[],notes:[]};
+    const tags=[
+      ...a.bricks.map(b=>`<span class="tag brick">Brick ${b===0?"set up":b} ✔</span>`),
+      ...a.units.filter(u=>!a.bricks.includes(u)).map(u=>`<span class="tag">${unitName(u)}</span>`)
+    ].join("");
+    return `<div class="row">
+      <div class="date">${prettyDate(d)}</div>
+      <div class="wpm ${w&&w.v>=TARGET?"pass":""}">${w?w.v:"—"}<small>WPM</small></div>
+      <div class="what">
+        ${tags||`<em>Speed test only</em>`}
+        ${a.notes.map(n=>`<div class="note">${n.t.replace(/</g,"&lt;")}</div>`).join("")}
+      </div></div>`;
+  }).join("");
+}
+
+/* backfill an earlier session by hand */
+document.getElementById("bfAdd").onclick=()=>{
+  const d=document.getElementById("bfDate").value;
+  const w=parseInt(document.getElementById("bfWpm").value,10);
+  const u=document.getElementById("bfUnit").value;
+  const note=document.getElementById("bfNote").value.trim();
+  if(!d){ document.getElementById("bfDate").focus(); return; }
+  if(w>0 && w<=200){
+    const log=S.wpm||[]; const i=log.findIndex(e=>e.d===d);
+    if(i>-1) log[i]={d:d,v:w}; else log.push({d:d,v:w});
+    S.wpm=log;
+  }
+  const a=day(d);
+  if(u!=="" && !a.units.includes(+u)) a.units.push(+u);
+  if(note){ a.notes=a.notes.filter(x=>x.u!==(u===""?-1:+u)); a.notes.push({u:u===""?-1:+u, t:note}); }
+  save();
+  document.getElementById("bfWpm").value="";
+  document.getElementById("bfNote").value="";
+  render();
+};
+
+/* backup and restore */
+document.getElementById("exportBtn").onclick=()=>{
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="samuel-coding-log-"+today()+".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+document.getElementById("importFile").onchange=e=>{
+  const f=e.target.files[0];
+  if(!f) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      if(!data || typeof data!=="object" || !("wpm" in data)) throw new Error("not a studio backup");
+      if(!confirm("Restore this backup? Everything currently on this device will be replaced.")) return;
+      S=Object.assign({studio:"SAMUEL CODING STUDIO",done:[],steps:{},notes:{},wpm:[],activity:{}}, data);
+      S.wpm=(S.wpm||[]).map(x=>typeof x==="number"?{d:"earlier",v:x}:x);
+      S.activity=S.activity||{};
+      save(); openUnit=null;
+      document.getElementById("brief").classList.remove("show");
+      render();
+    }catch(err){
+      alert("That file isn't a studio backup. Look for one named samuel-coding-log-....json");
+    }
+  };
+  reader.readAsText(f);
+  e.target.value="";
+};
+
 /* ---------------- render ---------------- */
 function render(){
   nameEl.textContent = S.studio || "SAMUEL CODING STUDIO";
@@ -598,6 +801,9 @@ function render(){
   });
   paintWPM();
   paintTimer();
+  renderLog();
+  const bf=document.getElementById("bfDate");
+  if(bf && !bf.value) bf.value=today();
 }
 
 function openBrief(n){
@@ -678,7 +884,9 @@ function wire(u){
       const i=+cb.dataset.step, arr=S.steps[u.n]||[];
       S.steps[u.n]= cb.checked ? Array.from(new Set([...arr,i])) : arr.filter(x=>x!==i);
       cb.closest("li").classList.toggle("checked", cb.checked);
+      touch(u.n);
       save();
+      renderLog();
     };
   });
   box.querySelectorAll("[data-copy]").forEach(btn=>{
@@ -691,10 +899,12 @@ function wire(u){
     };
   });
   const note=box.querySelector("#note");
-  if(note) note.oninput=()=>{ S.notes[u.n]=note.value; save(); };
+  if(note) note.oninput=()=>{ S.notes[u.n]=note.value; touch(u.n,{note:note.value}); save(); };
   const d=box.querySelector("#doneBtn");
   if(d) d.onclick=()=>{
-    S.done = S.done.includes(u.n) ? S.done.filter(x=>x!==u.n) : [...S.done, u.n];
+    const adding=!S.done.includes(u.n);
+    S.done = adding ? [...S.done, u.n] : S.done.filter(x=>x!==u.n);
+    if(adding) touch(u.n,{brick:u.n}); else touch(u.n);
     save();
     box.innerHTML=fullBrief(u); wire(u); render();
   };
