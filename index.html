@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Samuel Coding Studio</title>
+<meta name="description" content="Ten game-building missions for a nine-year-old producer. Type fast, describe clearly, build something every week.">
+<meta name="theme-color" content="#FFB703">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FFB703'/%3E%3Crect x='4' y='12' width='24' height='16' fill='%23fff' stroke='%2310161D' stroke-width='3'/%3E%3Crect x='8' y='6' width='6' height='7' fill='%23fff' stroke='%2310161D' stroke-width='3'/%3E%3Crect x='18' y='6' width='6' height='7' fill='%23fff' stroke='%2310161D' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E7ECF1;
+    --plate:#FFFFFF;
+    --ink:#10161D;
+    --ink-soft:#4A5765;
+    --red:#E5322D;
+    --yellow:#FFB703;
+    --blue:#1F6FEB;
+    --green:#1E9E5A;
+    --rule:3px solid var(--ink);
+    --pop:6px 6px 0 var(--ink);
+    --pop-sm:4px 4px 0 var(--ink);
+    --display:"Archivo Black","Arial Black",Impact,sans-serif;
+    --body:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image:linear-gradient(var(--ink) .5px,transparent .5px),linear-gradient(90deg,var(--ink) .5px,transparent .5px);
+    background-size:28px 28px;background-position:-1px -1px;
+    color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55;
+  }
+  .sheet{max-width:1080px;margin:0 auto;padding:20px 18px 80px}
+
+  /* nameplate */
+  .plate{
+    background:var(--yellow);border:var(--rule);box-shadow:var(--pop);
+    padding:20px 22px;display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:space-between;
+  }
+  .eyebrow{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase}
+  #studioName{
+    font-family:var(--display);font-size:clamp(28px,6.4vw,54px);line-height:.95;letter-spacing:-.02em;
+    text-transform:uppercase;margin:6px 0 4px;border-bottom:4px dashed rgba(16,22,29,.35);
+    display:inline-block;min-width:6ch;padding:0 2px;outline:none;
+  }
+  #studioName:focus{background:var(--plate);border-bottom-style:solid}
+  .crew{font-size:14px;font-weight:500}
+  .crew b{font-weight:700}
+  .hint{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-top:6px}
+
+  /* timer */
+  .timer{background:var(--plate);border:var(--rule);box-shadow:var(--pop-sm);padding:12px 14px;min-width:250px}
+  .clock{font-family:var(--display);font-size:44px;line-height:1;letter-spacing:-.02em}
+  .phase{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2px}
+  .phases{display:flex;gap:4px;margin:10px 0}
+  .seg{flex:1;height:12px;border:2px solid var(--ink);background:var(--plate);position:relative;overflow:hidden}
+  .seg[data-w="2"]{flex:2}
+  .seg i{position:absolute;inset:0;width:0;background:var(--blue);display:block}
+  .seg.done i{width:100%}
+  .btnrow{display:flex;gap:6px}
+  button{font-family:var(--body);font-weight:700;cursor:pointer}
+  .mini{
+    border:2px solid var(--ink);background:var(--plate);color:var(--ink);font-family:var(--mono);
+    font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:7px 10px;box-shadow:2px 2px 0 var(--ink);
+  }
+  .mini:hover{background:var(--yellow)}
+  .mini:active{transform:translate(2px,2px);box-shadow:none}
+
+  /* licence strip */
+  .licence{
+    margin-top:16px;background:var(--plate);border:var(--rule);box-shadow:var(--pop-sm);
+    display:grid;grid-template-columns:auto 1fr auto;gap:22px;align-items:center;padding:16px 20px;
+  }
+  .wpm-big{font-family:var(--display);font-size:52px;line-height:.9}
+  .wpm-unit{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft)}
+  .track{height:26px;border:2px solid var(--ink);position:relative;background:var(--paper);overflow:hidden}
+  .track i{position:absolute;left:0;top:0;bottom:0;background:var(--blue);display:block;width:0}
+  .track.pass i{background:var(--green)}
+  .track span{
+    position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  }
+  .spark{display:flex;gap:4px;align-items:flex-end;height:34px;margin-top:8px}
+  .spark div{flex:1;background:var(--ink);border:1px solid var(--ink);min-height:2px}
+  .spark div.pass{background:var(--green)}
+  .logrow{display:flex;gap:6px;align-items:center}
+  .logrow input{
+    width:74px;font-family:var(--mono);font-size:16px;font-weight:700;text-align:center;
+    border:2px solid var(--ink);padding:7px 4px;background:var(--paper);color:var(--ink);
+  }
+  .logrow input:focus{outline:3px solid var(--blue);outline-offset:1px;background:var(--plate)}
+
+  /* gate */
+  .licence.gated{border-color:var(--red);box-shadow:6px 6px 0 var(--red)}
+  .gate-flag{
+    grid-column:1/-1;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
+    background:var(--red);color:var(--plate);margin:-16px -20px 4px;padding:12px 20px;border-bottom:var(--rule);
+  }
+  .gate-flag strong{font-family:var(--display);font-size:16px;text-transform:uppercase;letter-spacing:.02em}
+  .gate-flag .type-it{color:rgba(255,255,255,.9)}
+  .links{display:flex;gap:6px;flex-wrap:wrap}
+  .links a{
+    border:2px solid var(--ink);background:var(--plate);color:var(--ink);text-decoration:none;
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    padding:7px 10px;box-shadow:2px 2px 0 var(--ink);
+  }
+  .links a:hover{background:var(--yellow)}
+  .card.locked{opacity:.55;box-shadow:none;border-style:dashed}
+  .card.locked:hover{box-shadow:none}
+  .card.locked .num{background:var(--ink-soft)}
+  .brick.locked{opacity:.5;border-style:dashed;box-shadow:none}
+  .nudge{animation:nudge .4s ease}
+  @keyframes nudge{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+  /* tower */
+  .tower-wrap{margin:34px 0 10px}
+  .sec-label{
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+    display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+    padding-bottom:8px;border-bottom:var(--rule);margin-bottom:16px;
+  }
+  .tower{display:flex;gap:8px;align-items:flex-end}
+  .brick{
+    flex:1;border:var(--rule);background:var(--plate);padding:26px 0 8px;position:relative;text-align:center;
+    font-family:var(--display);font-size:15px;box-shadow:var(--pop-sm);cursor:pointer;transition:transform .12s ease;
+  }
+  .brick::before,.brick::after{
+    content:"";position:absolute;top:-9px;width:22%;height:12px;
+    border:var(--rule);border-bottom:none;border-radius:6px 6px 0 0;background:inherit;
+  }
+  .brick::before{left:16%}
+  .brick::after{right:16%}
+  .brick:hover{transform:translateY(-4px)}
+  .brick.setup{flex:0 0 84px;background:var(--paper)}
+  .brick.setup::before,.brick.setup::after{background:var(--paper)}
+  .brick.done{background:var(--green);color:var(--plate)}
+  .brick.done::before,.brick.done::after{background:var(--green)}
+  .brick.current{background:var(--red);color:var(--plate)}
+  .brick.current::before,.brick.current::after{background:var(--red)}
+  .count{font-family:var(--mono);font-size:11px;letter-spacing:.1em;white-space:nowrap}
+
+  /* mission cards */
+  .missions{display:grid;gap:14px;margin-top:14px}
+  .card{
+    background:var(--plate);border:var(--rule);box-shadow:var(--pop-sm);display:grid;
+    grid-template-columns:78px 1fr auto;align-items:center;gap:16px;padding:14px 16px;
+    text-align:left;width:100%;font-family:var(--body);
+  }
+  .card:hover{box-shadow:var(--pop)}
+  .card .num{font-family:var(--display);font-size:30px;line-height:1;background:var(--ink);color:var(--plate);padding:12px 0;text-align:center}
+  .card.open .num{background:var(--red)}
+  .card.solved .num{background:var(--green)}
+  .card.zero .num{background:var(--blue)}
+  .card.zero.solved .num{background:var(--green)}
+  .card .title{font-family:var(--display);font-size:19px;text-transform:uppercase;letter-spacing:-.01em}
+  .card .learn{font-size:14px;color:var(--ink-soft);margin-top:2px}
+  .stars{font-family:var(--mono);font-size:13px;color:var(--yellow);-webkit-text-stroke:.6px var(--ink)}
+  .go{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+
+  /* brief */
+  .brief{display:none;background:var(--plate);border:var(--rule);box-shadow:var(--pop);margin-top:14px;padding:0 0 22px}
+  .brief.show{display:block}
+  .brief-top{background:var(--blue);color:var(--plate);border-bottom:var(--rule);padding:18px 22px}
+  .brief-top.zero{background:var(--ink)}
+  .brief-top .eyebrow{color:rgba(255,255,255,.85)}
+  .brief-top h2{font-family:var(--display);font-size:clamp(24px,5vw,38px);text-transform:uppercase;margin:4px 0 0;line-height:1}
+  .brief-body{padding:22px 22px 0}
+  .block{margin-bottom:26px}
+  .block h3{
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+    margin:0 0 10px;padding-bottom:6px;border-bottom:2px solid var(--ink);
+  }
+  .story p{margin:0 0 12px}
+  .story .rule{
+    background:var(--paper);border-left:8px solid var(--yellow);border-top:2px solid var(--ink);
+    border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);padding:12px 14px;font-weight:500;
+  }
+  .goal{background:var(--yellow);border:var(--rule);padding:16px 18px;font-family:var(--display);font-size:clamp(17px,3.4vw,23px);text-transform:uppercase;line-height:1.25}
+  ol.steps{list-style:none;margin:0;padding:0;counter-reset:s}
+  ol.steps > li{counter-increment:s;border:2px solid var(--ink);margin-bottom:12px;padding:14px 16px 14px 58px;position:relative}
+  ol.steps > li::before{
+    content:counter(s);position:absolute;left:-2px;top:-2px;width:44px;height:44px;background:var(--ink);
+    color:var(--plate);font-family:var(--display);font-size:20px;display:grid;place-items:center;
+  }
+  ol.steps > li.checked{background:#F1FAF4;border-color:var(--green)}
+  ol.steps > li.checked::before{background:var(--green)}
+  .step-head{font-weight:700;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+  .step-note{font-size:14px;color:var(--ink-soft);margin-top:6px}
+  .prompt{font-family:var(--mono);font-size:14px;line-height:1.5;background:var(--ink);color:#EAF2FF;padding:12px 14px;margin-top:10px;border-left:8px solid var(--yellow)}
+  .prompt-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+  .type-it{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+  .ask{border:2px dashed var(--ink);padding:10px 12px;margin-top:10px;font-size:15px;background:var(--paper)}
+  .ask b{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;display:block;margin-bottom:4px}
+  .check{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+  .check input{width:22px;height:22px;accent-color:var(--green);margin:0}
+  ul.plain{margin:0;padding-left:20px}
+  ul.plain li{margin-bottom:8px}
+  .rules{display:grid;gap:10px}
+  .rules div{border:2px solid var(--ink);border-left:8px solid var(--red);padding:10px 14px}
+  .rules b{font-family:var(--display);text-transform:uppercase;font-size:15px;display:block}
+  textarea{width:100%;font-family:var(--mono);font-size:14px;border:2px solid var(--ink);padding:10px 12px;min-height:76px;resize:vertical;background:var(--paper);color:var(--ink)}
+  textarea:focus{outline:3px solid var(--blue);outline-offset:1px;background:var(--plate)}
+  .stamp{display:inline-block;border:3px solid var(--red);color:var(--red);font-family:var(--display);font-size:14px;text-transform:uppercase;padding:8px 12px;transform:rotate(-3deg);letter-spacing:.04em}
+  .stamp.ok{border-color:var(--green);color:var(--green);transform:rotate(2deg)}
+  .finish{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;border-top:var(--rule);padding-top:18px}
+  .big{border:var(--rule);background:var(--green);color:var(--plate);font-family:var(--display);font-size:16px;text-transform:uppercase;letter-spacing:.02em;padding:14px 20px;box-shadow:var(--pop-sm)}
+  .big:hover{background:var(--ink)}
+  .big:active{transform:translate(4px,4px);box-shadow:none}
+  .big.undo{background:var(--plate);color:var(--ink)}
+  footer{margin-top:44px;font-family:var(--mono);font-size:11px;color:var(--ink-soft);text-align:center;line-height:1.8}
+  :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+  @media (max-width:760px){
+    .plate{flex-direction:column;align-items:stretch}
+    .timer{min-width:0}
+    .licence{grid-template-columns:1fr;gap:14px}
+    .tower{flex-wrap:wrap}
+    .brick{flex:0 0 calc(20% - 7px);font-size:13px}
+    .brick.setup{flex:0 0 100%;padding-top:22px}
+    .card{grid-template-columns:56px 1fr;gap:12px}
+    .card .go{display:none}
+    .card .num{font-size:22px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="plate">
+    <div>
+      <div class="eyebrow">Coding studio · Est. 2026</div>
+      <h1 id="studioName" contenteditable="true" spellcheck="false" aria-label="Studio name">SAMUEL CODING STUDIO</h1>
+      <div class="crew"><b>Producer:</b> Samuel &nbsp;·&nbsp; <b>Lead developer:</b> Claude (Opus 5)</div>
+      <div class="hint">Click the big name to rename your studio. It saves by itself.</div>
+    </div>
+    <div class="timer">
+      <div class="phase" id="phaseLabel">Ready · press start</div>
+      <div class="clock" id="clock">10:00</div>
+      <div class="phases">
+        <div class="seg" data-w="1" id="seg0"><i></i></div>
+        <div class="seg" data-w="2" id="seg1"><i></i></div>
+        <div class="seg" data-w="1" id="seg2"><i></i></div>
+      </div>
+      <div class="btnrow">
+        <button class="mini" id="startBtn">Start</button>
+        <button class="mini" id="skipBtn">Next part</button>
+        <button class="mini" id="resetBtn">Reset</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- TYPING LICENCE -->
+  <section class="licence" id="licence">
+    <div class="gate-flag" id="gateFlag">
+      <div>
+        <strong id="gateTitle">Speed test first</strong>
+        <div class="type-it" id="gateSub">Every class starts here. Take one timed test, log the number, and the missions unlock.</div>
+      </div>
+      <div class="links">
+        <a href="https://www.nitrotype.com" target="_blank" rel="noopener">Nitro Type</a>
+        <a href="https://www.typingclub.com" target="_blank" rel="noopener">TypingClub</a>
+      </div>
+    </div>
+    <div>
+      <div class="wpm-big" id="wpmBest">—</div>
+      <div class="wpm-unit">Best WPM</div>
+    </div>
+    <div>
+      <div class="sec-label" style="border:none;padding:0;margin:0 0 8px">
+        <span>Producer's licence · target 30 WPM</span>
+        <span class="count" id="wpmStatus">No speed test yet</span>
+      </div>
+      <div class="track" id="wpmTrack"><i></i><span id="wpmGoal">30 WPM</span></div>
+      <div class="spark" id="wpmSpark"></div>
+    </div>
+    <div class="logrow">
+      <input id="wpmInput" type="number" min="1" max="200" inputmode="numeric" placeholder="WPM" aria-label="Today's words per minute">
+      <button class="mini" id="wpmLog">Log today</button>
+    </div>
+  </section>
+
+  <section class="tower-wrap">
+    <div class="sec-label"><span>The tower · one brick per finished game</span><span class="count" id="towerCount">0 / 10 built</span></div>
+    <div class="tower" id="tower"></div>
+  </section>
+
+  <section>
+    <div class="sec-label" style="margin-top:34px"><span>Units</span><span class="count">Setup → Easy → Middle</span></div>
+    <div class="missions" id="missions"></div>
+  </section>
+
+  <section class="brief" id="brief" tabindex="-1"></section>
+
+  <footer>
+    Producer types every prompt. Lead developer writes every line of code.<br>
+    Eleven units, ten bricks, one studio.
+  </footer>
+</div>
+
+<script>
+/* ---------------- content ---------------- */
+const UNIT0 = {
+  n:0, stars:0, title:"Know Your Studio", learn:"Set up the tools and learn the one rule that never changes",
+  ready:true, zero:true,
+  story:[
+    "Before you build anything, you need to know your workshop. You have three tools: a <b>keyboard</b>, a <b>chat window</b>, and a <b>preview window</b>. That's it. You will never type a single line of code.",
+    "Here's the job. You are the <b>producer</b>: you decide what the game is and you say it out loud in English. Claude is your <b>lead developer</b>: it writes the code and hands it back in seconds. Real studios work exactly like this — the person with the idea and the person who builds it are almost never the same person."
+  ],
+  rule:"The one rule that never changes: a computer does exactly what you SAY, not what you MEAN. \"Make it bigger\" is a bad instruction. \"Make the ball twice as wide\" is a good one.",
+  story2:[
+    "So the skill you are really practising for the next ten weeks isn't coding. It's <b>describing a machine so clearly that someone else can build it</b>. That skill works on developers, on robots, on AI, and on your parents."
+  ],
+  ask:"Your friend says \"make my game harder.\" Name three completely different things they might mean.",
+  goal:"Get the studio open, take your first typing speed test, and build your studio's front door — a title page with your name on it.",
+  steps:[
+    {h:"Warm up your hands", p:"", note:"Open <b>Nitro Type</b> or <b>TypingClub</b>. Do one race or one lesson to loosen up. Don't look at the keys — look at the screen."},
+    {h:"Take your first speed test", p:"",
+     note:"Now do one proper timed test and write the number down. Log it in the box at the top of this page. <b>Your target is 30 WPM.</b> Here's why that number matters: a prompt like the ones you'll write is about 25 words. At 10 WPM it takes you two and a half minutes. At 30 WPM it takes 50 seconds. You only get 20 minutes to build, so every minute you save is a minute of building.",
+     ask:"Whatever your first score is, that's your baseline — not your limit. Log a new score every single week and watch the little bars grow."},
+    {h:"Open the studio", p:"",
+     note:"Go to <b>claude.ai</b> and sign in with the account your parent set up. Look at the model name near the top of the chat box — it should say <b>Opus 5</b>. If it says something else, change it. Different models are like different engineers; Opus 5 is the one that builds games best."},
+    {h:"Learn the two windows", p:"",
+     note:"<b>Left window</b> = where you talk. This is where you type your prompt and press enter. <b>Right window</b> = the <b>artifact</b>: the actual living thing you built. You can click it, play it, and it updates whenever Claude changes it. Nothing appears on the right until you ask for something buildable."},
+    {h:"Build your front door", p:"Make a web page that says SAMUEL CODING STUDIO in giant bouncing letters, with a background that slowly changes colour. Put my name at the bottom as the producer.",
+     note:"Type it yourself. Press enter. Watch the right window build itself line by line — that's your lead developer working."},
+    {h:"Change one thing", p:"Make the letters bigger and change the font to something that looks like a video game logo.",
+     note:"Notice it doesn't patch a corner — it rebuilds the whole page. That's normal. Small message, big rebuild, every time."},
+    {h:"Break it on purpose, then undo", p:"Make every single thing on the page invisible.",
+     note:"Do it. The page goes blank. Now find the little <b>version arrows</b> at the top of the artifact and click back one step. Your page returns. <b>You can never permanently ruin anything here</b> — which means you can try anything you want.",
+     ask:"Why is knowing how to undo more useful than knowing how to be careful?"},
+    {h:"Sign the studio rules", p:"",
+     note:"Three rules, for all ten missions: <b>1.</b> One problem per message. <b>2.</b> Say exactly what you see, not just \"it's broken.\" <b>3.</b> Play it before you complain about it. Read them out loud, then rename the studio at the top of this page to whatever you want it to be called."}
+  ],
+  play:[
+    "Play with your front door page. Ask for one more change, whatever you feel like.",
+    "Do one more typing race and see if the number moved.",
+    "Explain to whoever is nearby what an <b>artifact</b> is, and what the difference is between saying <i>make it bigger</i> and <i>make it twice as wide</i>."
+  ]
+};
+
+const MISSIONS = [
+  {
+    n:1, stars:1, title:"The Atom Factory", learn:"Click, count, and make it feel good", ready:true,
+    story:[
+      "Everything around you is made of <b>atoms</b>. In the middle sits the <b>nucleus</b> — heavy, crowded, positive. Whizzing around it are <b>electrons</b> — tiny, fast, negative. Opposites attract, so the nucleus holds its electrons like a magnet holding a swarm of bees.",
+      "But electrons can't fly wherever they like. They have to sit in <b>shells</b>, like seats in a stadium."
+    ],
+    rule:"Shell 1 has 2 seats. Shell 2 has 8 seats. One electron = hydrogen. Two = helium, the balloon gas. Ten = neon, the sign gas.",
+    story2:[
+      "Atoms with completely full shells are the calmest atoms in the universe. They don't react with anything, so chemists call them the <b>noble gases</b>. Almost all of chemistry is just atoms swapping electrons, trying to fill up their seats."
+    ],
+    ask:"Helium balloons are safe, but hydrogen balloons explode. Both are gases. What's different about their shells?",
+    goal:"Build an atom factory. Click the nucleus to knock electrons loose, fill shell 1, then shell 2 — and level up from hydrogen to helium to neon.",
+    steps:[
+      {h:"Start the engine", p:"Make a game with a big glowing atom nucleus in the middle of the screen. When I click the nucleus, one electron pops out and flies into a circle orbit around it. Show a counter of how many electrons I have collected.", note:"This is the longest prompt of the day — about 40 words. Say what you see, what you do, and what happens."},
+      {h:"Fill shell 1", p:"The first shell can only hold 2 electrons. When it is full, show the word HELIUM and start a second, bigger orbit ring."},
+      {h:"Fill shell 2", p:"The second shell holds 8 electrons. When that is full, show NEON and the words FULL SHELLS = HAPPY ATOM.", note:"Stop and look: 2 then 8. That's the real rule the whole periodic table is built on."},
+      {h:"Add the juice", p:"Make the nucleus shake and flash brighter every time I click it.", ask:"Did that make the game better, or make it more fun? Those are two different things."},
+      {h:"Producer's call", p:"", note:"Your turn — no help. Add one thing you want: a sound, a clicks-per-second meter, electrons that drift away if you're too slow. Type it yourself. If it breaks the game, undo and describe it a different way."},
+      {h:"Stamp it", p:"Add a title screen that says [MY STUDIO NAME] PRESENTS: ATOM FACTORY, with a START button.", note:"Every game you make gets this screen. That's how people know it's yours."}
+    ],
+    play:[
+      "Play it for real. No talking, no fixing — just play.",
+      "Write <b>one patch note</b>: the single most annoying thing, described exactly. Send it to your lead developer and watch it get fixed.",
+      "Show someone in the house. Explain why neon is a happy atom."
+    ]
+  },
+  {n:2, stars:1, title:"Brick Catcher", learn:"Arrow keys and catching things",
+   goal:"Move a basket left and right to catch falling LEGO bricks before they hit the ground.",
+   founding:"A game where I use the left and right arrow keys to catch falling LEGO bricks with a basket. Show my score."},
+  {n:3, stars:2, title:"Meteor Dodge", learn:"Random obstacles and losing",
+   goal:"Fly a spaceship through falling meteors. One hit and it's over.",
+   founding:"A spaceship game where I dodge random meteors falling from the top. Game over if one hits me."},
+  {n:4, stars:2, title:"Extreme Table Tennis", learn:"Bouncing and a computer opponent",
+   goal:"Beat a computer paddle at ping pong — while the ball gets faster every single hit.",
+   founding:"Create a ping pong game against a computer opponent. The ball speeds up every time it hits a paddle."},
+  {n:5, stars:2, title:"Science Memory Match", learn:"Remembering what's face up",
+   goal:"Flip cards two at a time and match the science symbols: H2O, CO2, O2.",
+   founding:"A memory match card game using science symbols like H2O, CO2 and O2. Two cards flip at a time."},
+  {n:6, stars:3, title:"Angry Blocks", learn:"Gravity, force, and things falling over",
+   goal:"Drag, aim, fire. Knock down a tower of bricks with three shots.",
+   founding:"A physics game like Angry Birds where I drag and shoot a ball to knock down a tower of bricks. I get three shots."},
+  {n:7, stars:3, title:"Typing Defender", learn:"Matching letters in real time",
+   goal:"Words fall from the sky. Type them correctly to shoot them out of the air.",
+   founding:"Words are falling from the sky. I must type the word correctly to fire a laser and destroy it."},
+  {n:8, stars:3, title:"Laser Maze Runner", learn:"Moving in two directions, and walls",
+   goal:"Use WASD to reach the exit without touching a single laser wall.",
+   founding:"A maze game where I use WASD to move a character to the exit without touching the laser walls."},
+  {n:9, stars:3, title:"T-Rex Dash", learn:"Jumping, and fake endless scrolling",
+   goal:"Run forever. Jump the cactus. Beat your own distance.",
+   founding:"An endless runner game like the Chrome dinosaur. Spacebar to jump over obstacles. Show the distance."},
+  {n:10, stars:3, title:"Tower Climber", learn:"A camera that follows you",
+   goal:"Jump from platform to platform and climb as high as you can. The screen climbs with you.",
+   founding:"A platformer where I jump on moving platforms to go as high as possible. The camera follows me upward."}
+];
+
+const ALL = [UNIT0, ...MISSIONS];
+
+/* ---------------- state ---------------- */
+const KEY = "samuel-coding-studio-v1";
+let S = { studio:"SAMUEL CODING STUDIO", done:[], steps:{}, notes:{}, wpm:[] };
+let openUnit = null;
+
+/* Works in two homes: inside Claude it uses the artifact store,
+   on GitHub Pages it uses the browser's own storage. */
+const store = {
+  async get(k){
+    if(window.storage) return await window.storage.get(k);
+    const v = localStorage.getItem(k);
+    return v ? {key:k, value:v} : null;
+  },
+  async set(k,v){
+    if(window.storage) return await window.storage.set(k,v);
+    localStorage.setItem(k,v);
+    return {key:k, value:v};
+  }
+};
+
+async function load(){
+  try{
+    const r = await store.get(KEY);
+    if(r && r.value) S = Object.assign(S, JSON.parse(r.value));
+  }catch(e){ /* first run, or storage unavailable — carry on with defaults */ }
+  // older saves stored plain numbers; give them a date so the daily check still works
+  S.wpm = (S.wpm||[]).map(e => typeof e === "number" ? {d:"earlier", v:e} : e);
+  render();
+}
+let saveTimer;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    try{ await store.set(KEY, JSON.stringify(S)); }
+    catch(e){ console.error("Could not save progress:", e); }
+  }, 400);
+}
+
+/* ---------------- nameplate ---------------- */
+const nameEl = document.getElementById("studioName");
+nameEl.addEventListener("input", ()=>{ S.studio = nameEl.textContent.trim(); save(); });
+nameEl.addEventListener("blur", ()=>{ if(!nameEl.textContent.trim()){ nameEl.textContent="SAMUEL CODING STUDIO"; S.studio=nameEl.textContent; save(); } });
+nameEl.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); nameEl.blur(); } });
+
+/* ---------------- typing licence ---------------- */
+const TARGET = 30;
+function today(){
+  const d=new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function todayTest(){ return (S.wpm||[]).find(e=>e.d===today()); }
+function locked(){ return !todayTest(); }
+
+function paintWPM(){
+  const log=S.wpm||[];
+  const best=log.length?Math.max(...log.map(e=>e.v)):0;
+  const t=todayTest();
+
+  document.getElementById("wpmBest").textContent = best || "—";
+  const track=document.getElementById("wpmTrack");
+  track.querySelector("i").style.width=Math.min(100,(best/TARGET)*100)+"%";
+  track.classList.toggle("pass", best>=TARGET);
+  document.getElementById("wpmGoal").textContent = best>=TARGET ? "Licensed ✔" : TARGET+" WPM";
+  document.getElementById("wpmStatus").textContent =
+    t ? "Today: "+t.v+" WPM · "+log.length+" tests logged"
+      : (best ? (TARGET-best>0 ? (TARGET-best)+" WPM to go" : "Target reached") : "No speed test yet");
+
+  const flag=document.getElementById("gateFlag");
+  const lic=document.getElementById("licence");
+  if(t){
+    lic.classList.remove("gated");
+    flag.style.background="var(--green)";
+    document.getElementById("gateTitle").textContent="Speed test done · missions open";
+    document.getElementById("gateSub").textContent =
+      t.v>=TARGET ? "Logged "+t.v+" WPM today — at or above target. Go build something."
+                  : "Logged "+t.v+" WPM today. Target is 30. Go build something.";
+  }else{
+    lic.classList.add("gated");
+    flag.style.background="var(--red)";
+    document.getElementById("gateTitle").textContent="Speed test first";
+    document.getElementById("gateSub").textContent="Every class starts here. Take one timed test, log the number, and the missions unlock.";
+  }
+
+  const spark=document.getElementById("wpmSpark");
+  spark.innerHTML="";
+  const recent=log.slice(-10);
+  const max=Math.max(TARGET,...recent.map(e=>e.v),1);
+  recent.forEach(e=>{
+    const bar=document.createElement("div");
+    bar.style.height=Math.max(6,(e.v/max)*100)+"%";
+    bar.title=e.d+" · "+e.v+" WPM";
+    if(e.v>=TARGET) bar.className="pass";
+    spark.appendChild(bar);
+  });
+}
+
+document.getElementById("wpmLog").onclick=()=>{
+  const input=document.getElementById("wpmInput");
+  const v=parseInt(input.value,10);
+  if(!v || v<1 || v>200){ input.focus(); input.select(); return; }
+  const log=S.wpm||[];
+  const i=log.findIndex(e=>e.d===today());
+  if(i>-1) log[i]={d:today(),v:v}; else log.push({d:today(),v:v});
+  S.wpm=log; save(); input.value=""; render();
+};
+
+function sendToTest(){
+  const lic=document.getElementById("licence");
+  lic.scrollIntoView({behavior:"smooth",block:"center"});
+  lic.classList.remove("nudge");
+  void lic.offsetWidth;
+  lic.classList.add("nudge");
+  document.getElementById("wpmInput").focus();
+}
+document.getElementById("wpmInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter") document.getElementById("wpmLog").click();
+});
+
+/* ---------------- session timer ---------------- */
+const PHASES=[
+  {label:"Part 1 · Typing · aim for 30 WPM", secs:600},
+  {label:"Part 2 · Build it", secs:1200},
+  {label:"Part 3 · Play and patch", secs:600}
+];
+let pi=0, left=PHASES[0].secs, running=false, tick=null;
+const clock=document.getElementById("clock"), phaseLabel=document.getElementById("phaseLabel");
+function paintTimer(){
+  const m=Math.floor(left/60), s=left%60;
+  clock.textContent = m+":"+String(s).padStart(2,"0");
+  phaseLabel.textContent = running ? PHASES[pi].label
+    : (pi===0 && left===PHASES[0].secs ? "Ready · press start" : PHASES[pi].label+" · paused");
+  for(let i=0;i<3;i++){
+    const seg=document.getElementById("seg"+i), bar=seg.querySelector("i");
+    if(i<pi){ seg.classList.add("done"); bar.style.width="100%"; }
+    else if(i===pi){ seg.classList.remove("done"); bar.style.width=(100*(1-left/PHASES[i].secs))+"%"; }
+    else { seg.classList.remove("done"); bar.style.width="0"; }
+  }
+}
+function step(){
+  if(left>0) left--;
+  else if(pi<2){ pi++; left=PHASES[pi].secs; }
+  else { running=false; clearInterval(tick); document.getElementById("startBtn").textContent="Start"; }
+  paintTimer();
+}
+document.getElementById("startBtn").onclick=e=>{
+  running=!running;
+  e.target.textContent = running ? "Pause" : "Start";
+  clearInterval(tick);
+  if(running) tick=setInterval(step,1000);
+  paintTimer();
+};
+document.getElementById("skipBtn").onclick=()=>{ if(pi<2){ pi++; left=PHASES[pi].secs; } else left=0; paintTimer(); };
+document.getElementById("resetBtn").onclick=()=>{
+  running=false; clearInterval(tick); pi=0; left=PHASES[0].secs;
+  document.getElementById("startBtn").textContent="Start"; paintTimer();
+};
+
+/* ---------------- render ---------------- */
+function render(){
+  nameEl.textContent = S.studio || "SAMUEL CODING STUDIO";
+
+  const gate=locked();
+
+  const tower=document.getElementById("tower");
+  tower.innerHTML="";
+  ALL.forEach(u=>{
+    const b=document.createElement("button");
+    b.className="brick"+(u.zero?" setup":"")+(S.done.includes(u.n)?" done":(openUnit===u.n?" current":""))
+      +((gate && !u.zero && !S.done.includes(u.n))?" locked":"");
+    b.textContent = u.zero ? "SET UP" : u.n;
+    b.setAttribute("aria-label", (u.zero?"Unit 0":"Mission "+u.n)+": "+u.title);
+    b.onclick=()=>openBrief(u.n);
+    tower.appendChild(b);
+  });
+  document.getElementById("towerCount").textContent = S.done.filter(n=>n>0).length+" / 10 built";
+
+  const list=document.getElementById("missions");
+  list.innerHTML="";
+  ALL.forEach(u=>{
+    const c=document.createElement("button");
+    const isLocked = gate && !u.zero;
+    c.className="card"+(u.zero?" zero":"")+(S.done.includes(u.n)?" solved":(openUnit===u.n?" open":""))
+      +(isLocked?" locked":"");
+    const label = isLocked ? "Speed test first" :
+      (S.done.includes(u.n) ? (u.zero?"Ready ✔":"Built ✔") : (u.ready?"Open brief ▸":"Preview ▸"));
+    c.innerHTML=`<div class="num">${u.zero?"00":String(u.n).padStart(2,"0")}</div>
+      <div><div class="title">${u.title}</div><div class="learn">${u.learn}</div></div>
+      <div style="text-align:right">
+        <div class="stars">${u.zero?"SETUP":"★".repeat(u.stars)+"☆".repeat(3-u.stars)}</div>
+        <div class="go">${label}</div>
+      </div>`;
+    c.onclick=()=>openBrief(u.n);
+    list.appendChild(c);
+  });
+  paintWPM();
+  paintTimer();
+}
+
+function openBrief(n){
+  if(n>0 && locked()){ sendToTest(); return; }
+  openUnit = (openUnit===n) ? null : n;
+  const box=document.getElementById("brief");
+  if(openUnit===null){ box.classList.remove("show"); box.innerHTML=""; render(); return; }
+  const u=ALL.find(x=>x.n===n);
+  box.innerHTML = u.ready ? fullBrief(u) : preview(u);
+  box.classList.add("show");
+  wire(u);
+  render();
+  box.scrollIntoView({behavior:"smooth",block:"start"});
+  box.focus({preventScroll:true});
+}
+
+function head(u){
+  return `<div class="brief-top${u.zero?" zero":""}">
+    <div class="eyebrow">${u.zero?"Unit 00 · before anything else":"Mission "+String(u.n).padStart(2,"0")+" · "+"★".repeat(u.stars)+"☆".repeat(3-u.stars)}</div>
+    <h2>${u.title}</h2></div>`;
+}
+
+function fullBrief(u){
+  const steps=u.steps.map((s,i)=>{
+    const on=(S.steps[u.n]||[]).includes(i);
+    return `<li class="${on?"checked":""}">
+      <div class="step-head"><span>${s.h}</span>
+        <label class="check"><input type="checkbox" data-step="${i}" ${on?"checked":""}> Done</label></div>
+      ${s.p?`<div class="prompt">${s.p}</div>
+        <div class="prompt-foot"><span class="type-it">Type it yourself — that's what the warm-up was for.</span>
+        <button class="mini" data-copy="${i}">Copy prompt</button></div>`:""}
+      ${s.note?`<div class="step-note">${s.note}</div>`:""}
+      ${s.ask?`<div class="ask"><b>Think about it</b>${s.ask}</div>`:""}
+    </li>`;
+  }).join("");
+
+  const noteBlock = u.zero ? "" : `<div style="margin-top:12px">
+      <h3 style="border:none;padding:0;margin-bottom:6px">Your patch note</h3>
+      <textarea id="note" placeholder="When I ______ , the game ______ . It should ______ instead.">${S.notes[u.n]||""}</textarea></div>`;
+
+  return head(u)+`<div class="brief-body">
+    <div class="block story"><h3>${u.zero?"First, how this works":"First, the real science"}</h3>
+      ${u.story.map(p=>`<p>${p}</p>`).join("")}
+      <p class="rule">${u.rule}</p>
+      ${u.story2.map(p=>`<p>${p}</p>`).join("")}
+      <div class="ask"><b>Answer this before you build</b>${u.ask}</div>
+    </div>
+    <div class="block"><h3>${u.zero?"Today's job":"What you're building"}</h3><div class="goal">${u.goal}</div></div>
+    <div class="block"><h3>${u.zero?"Set up · eight steps":"Build it · six steps"}</h3><ol class="steps">${steps}</ol></div>
+    <div class="block"><h3>${u.zero?"Then play":"Now play it"}</h3>
+      <ul class="plain">${u.play.map(p=>`<li>${p}</li>`).join("")}</ul>
+      ${noteBlock}
+    </div>
+    <div class="finish">
+      <span class="type-it">${u.zero?"Studio open and speed test logged?":"Finished and working? Put a brick in the tower."}</span>
+      ${S.done.includes(u.n)
+        ? `<button class="big undo" id="doneBtn">${u.zero?"Not quite ready yet":"Take brick back out"}</button>`
+        : `<button class="big" id="doneBtn">${u.zero?"Studio is open ✔":"Add brick "+u.n+" to the tower"}</button>`}
+    </div></div>`;
+}
+
+function preview(u){
+  return head(u)+`<div class="brief-body">
+    <div class="block"><h3>What you'll build</h3><div class="goal">${u.goal}</div></div>
+    <div class="block"><h3>What you'll learn</h3><p>${u.learn}.</p></div>
+    <div class="block"><h3>Your opening prompt</h3>
+      <div class="prompt">${u.founding}</div>
+      <div class="prompt-foot"><span class="type-it">The rest of this mission gets written before class.</span>
+      <button class="mini" data-copy="0">Copy prompt</button></div>
+    </div>
+    <div class="block"><span class="stamp">Full brief in development</span></div></div>`;
+}
+
+function wire(u){
+  const box=document.getElementById("brief");
+  box.querySelectorAll("input[type=checkbox]").forEach(cb=>{
+    cb.onchange=()=>{
+      const i=+cb.dataset.step, arr=S.steps[u.n]||[];
+      S.steps[u.n]= cb.checked ? Array.from(new Set([...arr,i])) : arr.filter(x=>x!==i);
+      cb.closest("li").classList.toggle("checked", cb.checked);
+      save();
+    };
+  });
+  box.querySelectorAll("[data-copy]").forEach(btn=>{
+    btn.onclick=async e=>{
+      e.stopPropagation();
+      const text = u.ready ? u.steps[+btn.dataset.copy].p : u.founding;
+      const ok = await copy(text);
+      btn.textContent = ok ? "Copied ✔" : "Select it and copy";
+      setTimeout(()=>btn.textContent="Copy prompt",1600);
+    };
+  });
+  const note=box.querySelector("#note");
+  if(note) note.oninput=()=>{ S.notes[u.n]=note.value; save(); };
+  const d=box.querySelector("#doneBtn");
+  if(d) d.onclick=()=>{
+    S.done = S.done.includes(u.n) ? S.done.filter(x=>x!==u.n) : [...S.done, u.n];
+    save();
+    box.innerHTML=fullBrief(u); wire(u); render();
+  };
+}
+
+async function copy(text){
+  try{ await navigator.clipboard.writeText(text); return true; }
+  catch(e){
+    try{
+      const t=document.createElement("textarea");
+      t.value=text; t.style.position="fixed"; t.style.opacity="0";
+      document.body.appendChild(t); t.select();
+      const ok=document.execCommand("copy"); t.remove(); return ok;
+    }catch(e2){ return false; }
+  }
+}
+
+load();
+</script>
+</body>
+</html>
