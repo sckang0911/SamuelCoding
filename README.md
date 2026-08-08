@@ -3,9 +3,6 @@
 A ten-mission vibe-coding curriculum for a nine-year-old, plus one setup unit.
 Single HTML file, no build step, no dependencies.
 
-**Working on this with Claude Code?** Read `CLAUDE.md` first, then `docs/redesign-spec.md`
-for the next piece of work. `docs/decisions.md` records what has already been settled and why.
-
 **Live site:** https://sckang0911.github.io/SamuelCoding/
 
 ---

@@ -118,6 +118,58 @@
   .nudge{animation:nudge .4s ease}
   @keyframes nudge{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 
+  .dial{
+    display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
+    background:var(--plate);border:2px dashed var(--ink);padding:12px 16px;margin-bottom:14px;
+  }
+  .dial-label{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+  .dial-btns{display:flex;gap:6px;flex-wrap:wrap}
+  .dial-btns .mini[aria-pressed="true"]{background:var(--ink);color:var(--plate)}
+
+  /* step rungs */
+  .rung{
+    font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+    border:2px solid var(--ink);padding:3px 7px;white-space:nowrap;
+  }
+  .rung.copy{background:var(--blue);color:var(--plate);border-color:var(--blue)}
+  .rung.fill{background:var(--yellow)}
+  .rung.build{background:var(--red);color:var(--plate);border-color:var(--red)}
+  .given{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-soft);margin-top:8px}
+  .prompt .blank{
+    color:var(--yellow);border-bottom:3px solid var(--yellow);
+    padding:0 14px;margin:0 2px;font-weight:700;
+  }
+  .guide{
+    border:2px solid var(--ink);border-left:8px solid var(--yellow);background:var(--paper);
+    padding:10px 12px;margin-top:8px;font-size:14px;
+  }
+  .guide b{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;display:block;margin-bottom:3px}
+  .task{
+    background:var(--red);color:var(--plate);border:var(--rule);border-color:var(--red);
+    padding:12px 14px;margin-top:10px;font-weight:700;font-size:16px;
+  }
+  .checklist{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .checklist span{
+    border:2px solid var(--ink);background:var(--plate);font-family:var(--mono);
+    font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 8px;
+  }
+  .see{
+    border:2px solid var(--green);border-left:8px solid var(--green);background:#F1FAF4;
+    padding:10px 12px;margin-top:10px;font-size:14px;
+  }
+  .see b{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;display:block;margin-bottom:3px;color:var(--green)}
+  .fix{margin-top:8px}
+  .fix .body{
+    display:none;border:2px solid var(--ink);border-left:8px solid var(--red);background:var(--paper);
+    padding:10px 12px;margin-top:8px;font-size:14px;
+  }
+  .fix.open .body{display:block}
+  .fix .body b{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;display:block;margin-bottom:3px;color:var(--red)}
+  .fix .body .say{font-family:var(--mono);font-size:13px;background:var(--ink);color:#EAF2FF;padding:8px 10px;margin-top:6px}
+  .hintbox{display:none;margin-top:8px}
+  .hintbox.open{display:block}
+  .hintcount{font-family:var(--mono);font-size:10px;color:var(--ink-soft);letter-spacing:.1em}
+
   /* learning log */
   .logbook{margin-top:44px}
   .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
@@ -294,8 +346,8 @@
   <section class="licence" id="licence">
     <div class="gate-flag" id="gateFlag">
       <div>
-        <strong id="gateTitle">Speed test first</strong>
-        <div class="type-it" id="gateSub">Every class starts here. Take one timed test, log the number, and the missions unlock.</div>
+        <strong id="gateTitle">Speed test</strong>
+        <div class="type-it" id="gateSub">Take one whenever you feel like it. It takes a minute and the log likes numbers.</div>
       </div>
       <div class="links">
         <a href="https://www.nitrotype.com" target="_blank" rel="noopener">Nitro Type</a>
@@ -326,7 +378,15 @@
   </section>
 
   <section>
-    <div class="sec-label" style="margin-top:34px"><span>Units</span><span class="count">Setup → Easy → Middle</span></div>
+    <div class="sec-label" style="margin-top:34px"><span>Units · pick any one you like</span><span class="count">Setup → Easy → Middle</span></div>
+    <div class="dial">
+      <span class="dial-label">How much help do you want today?</span>
+      <div class="dial-btns">
+        <button class="mini" data-help="more">Give me the prompts</button>
+        <button class="mini" data-help="normal">As written</button>
+        <button class="mini" data-help="less">I'll write my own</button>
+      </div>
+    </div>
     <div class="missions" id="missions"></div>
   </section>
 
@@ -379,106 +439,592 @@
 
 <script>
 /* ---------------- content ---------------- */
+/* Every step carries a rung — copy | fill | build — and four fields:
+   DO (h + note) · the prompt · YOU SHOULD SEE (see) · IF NOT (ifnot).
+   The share of given wording falls from 100% in unit 00 to 0% in mission 10. */
+
+const CHECKLIST = ["What I see","What I do","What happens","How much"];
+
 const UNIT0 = {
   n:0, stars:0, title:"Know Your Studio", learn:"Set up the tools and learn the one rule that never changes",
   ready:true, zero:true,
   story:[
-    "Before you build anything, you need to know your workshop. You have three tools: a <b>keyboard</b>, a <b>chat window</b>, and a <b>preview window</b>. That's it. You will never type a single line of code.",
-    "Here's the job. You are the <b>producer</b>: you decide what the game is and you say it out loud in English. Claude is your <b>lead developer</b>: it writes the code and hands it back in seconds. Real studios work exactly like this — the person with the idea and the person who builds it are almost never the same person."
+    "Before you build anything, you need to know your workshop. You have three tools: a <b>keyboard</b>, a <b>chat window</b>, and a <b>preview window</b>. That is all. You will never type a single line of code.",
+    "Here is the job. You are the <b>producer</b>: you decide what the game is and you say it out loud in English. Claude is your <b>lead developer</b>: it writes the code and hands it back in seconds. Real studios work exactly like this — the person with the idea and the person who builds it are almost never the same person."
   ],
-  rule:"The one rule that never changes: a computer does exactly what you SAY, not what you MEAN. \"Make it bigger\" is a bad instruction. \"Make the ball twice as wide\" is a good one.",
+  rule:"The one rule that never changes: a computer does exactly what you SAY, not what you MEAN. “Make it bigger” is a bad instruction. “Make the ball twice as wide” is a good one.",
   story2:[
-    "So the skill you are really practising for the next ten weeks isn't coding. It's <b>describing a machine so clearly that someone else can build it</b>. That skill works on developers, on robots, on AI, and on your parents."
+    "So the skill you are really practising is not coding. It is <b>describing a machine so clearly that someone else can build it</b>. That works on developers, on robots, on AI, and on your parents.",
+    "Today every prompt is written out for you. By mission 10 none of them will be. That is the whole plan."
   ],
-  ask:"Your friend says \"make my game harder.\" Name three completely different things they might mean.",
+  ask:"Your friend says “make my game harder.” Name three completely different things they might mean.",
   goal:"Get the studio open, take your first typing speed test, and build your studio's front door — a title page with your name on it.",
   steps:[
-    {h:"Warm up your hands", p:"", note:"Open <b>Nitro Type</b> or <b>TypingClub</b>. Do one race or one lesson to loosen up. Don't look at the keys — look at the screen."},
-    {h:"Take your first speed test", p:"",
-     note:"Now do one proper timed test and write the number down. Log it in the box at the top of this page. <b>Your target is 30 WPM.</b> Here's why that number matters: a prompt like the ones you'll write is about 25 words. At 10 WPM it takes you two and a half minutes. At 30 WPM it takes 50 seconds. You only get 20 minutes to build, so every minute you save is a minute of building.",
-     ask:"Whatever your first score is, that's your baseline — not your limit. Log a new score every single week and watch the little bars grow."},
-    {h:"Open the studio", p:"",
-     note:"Go to <b>claude.ai</b> and sign in with the account your parent set up. Look at the model name near the top of the chat box — it should say <b>Opus 5</b>. If it says something else, change it. Different models are like different engineers; Opus 5 is the one that builds games best."},
-    {h:"Learn the two windows", p:"",
-     note:"<b>Left window</b> = where you talk. This is where you type your prompt and press enter. <b>Right window</b> = the <b>artifact</b>: the actual living thing you built. You can click it, play it, and it updates whenever Claude changes it. Nothing appears on the right until you ask for something buildable."},
-    {h:"Build your front door", p:"Make a web page that says SAMUEL CODING STUDIO in giant bouncing letters, with a background that slowly changes colour. Put my name at the bottom as the producer.",
-     note:"Type it yourself. Press enter. Watch the right window build itself line by line — that's your lead developer working."},
-    {h:"Change one thing", p:"Make the letters bigger and change the font to something that looks like a video game logo.",
-     note:"Notice it doesn't patch a corner — it rebuilds the whole page. That's normal. Small message, big rebuild, every time."},
-    {h:"Break it on purpose, then undo", p:"Make every single thing on the page invisible.",
+    {h:"Warm up your hands", rung:"copy",
+     note:"Open <b>Nitro Type</b> or <b>TypingClub</b>. One race or one lesson to loosen up. Do not look at the keys — look at the screen.",
+     see:"Your hands feel warm and you have stopped hunting for letters.",
+     ifnot:"Nothing to fix here. Slow down and finish the race."},
+    {h:"Take your first speed test", rung:"copy",
+     note:"Now one proper timed test. Write the number down and log it at the top of this page. <b>Your target is 30 WPM.</b> Here is why: a prompt is about 25 words. At 10 WPM that is two and a half minutes of typing. At 30 WPM it is fifty seconds. You get 20 minutes to build, so every minute you save is a minute of building.",
+     see:"A number in the box at the top of this page, and the red bar turning green.",
+     ifnot:"If the site did not give you a WPM number, look for “words per minute” at the end of the test, or try the other site.",
+     ask:"Whatever the number is, that is your baseline — not your limit. Log one every week and watch the little bars grow."},
+    {h:"Open the studio", rung:"copy",
+     note:"Go to <b>claude.ai</b> and sign in with the account your parent set up. Look at the model name near the chat box — it should say <b>Opus 5</b>. Different models are like different engineers; Opus 5 builds games best.",
+     see:"An empty chat box, and the word Opus 5 somewhere near it.",
+     ifnot:"If it says a different model, click the model name and choose Opus 5 from the list."},
+    {h:"Learn the two windows", rung:"copy",
+     note:"<b>Left window</b> — where you talk. <b>Right window</b> — the <b>artifact</b>: the living thing you built. You can click it, play it, and it updates whenever Claude changes it. Nothing appears on the right until you ask for something buildable.",
+     see:"Just the left window for now. The right one is still empty.",
+     ifnot:"Nothing to fix. The right window fills up in the next step."},
+    {h:"Build your front door", rung:"copy",
+     p:"Make a web page that says SAMUEL CODING STUDIO in giant bouncing letters, with a background that slowly changes colour. Put my name at the bottom as the producer.",
+     note:"Type it yourself. Press enter. Watch the right window build itself line by line — that is your lead developer working.",
+     see:"A page in the right window with giant moving letters and a colour that keeps changing.",
+     ifnot:"Say: “I cannot see the page in the right window. Please build it as a web page I can look at.”"},
+    {h:"Change one thing", rung:"copy",
+     p:"Make the letters bigger and change the font to something that looks like a video game logo.",
+     note:"Notice it does not patch a corner — it rebuilds the whole page. Small message, big rebuild, every time.",
+     see:"Same page, bigger chunkier letters.",
+     ifnot:"Say: “The letters are still the same size. Make them about twice as big.” Notice you had to say how much."},
+    {h:"Break it on purpose, then undo", rung:"copy",
+     p:"Make every single thing on the page invisible.",
      note:"Do it. The page goes blank. Now find the little <b>version arrows</b> at the top of the artifact and click back one step. Your page returns. <b>You can never permanently ruin anything here</b> — which means you can try anything you want.",
+     see:"A blank page, then your page again after you click back.",
+     ifnot:"If you cannot find the arrows, look at the very top of the right window for a small ‹ and ›.",
      ask:"Why is knowing how to undo more useful than knowing how to be careful?"},
-    {h:"Sign the studio rules", p:"",
-     note:"Three rules, for all ten missions: <b>1.</b> One problem per message. <b>2.</b> Say exactly what you see, not just \"it's broken.\" <b>3.</b> Play it before you complain about it. Read them out loud, then rename the studio at the top of this page to whatever you want it to be called."}
+    {h:"Sign the studio rules", rung:"copy",
+     note:"Three rules, for all ten missions. <b>1.</b> One problem per message. <b>2.</b> Say exactly what you see, not “it is broken.” <b>3.</b> Play it before you complain about it. Read them out loud, then rename the studio at the top of this page to whatever you want it called.",
+     see:"Your studio name at the top of this page, in your own words.",
+     ifnot:"Click the big yellow name and type over it."}
   ],
   play:[
     "Play with your front door page. Ask for one more change, whatever you feel like.",
     "Do one more typing race and see if the number moved.",
-    "Explain to whoever is nearby what an <b>artifact</b> is, and what the difference is between saying <i>make it bigger</i> and <i>make it twice as wide</i>."
+    "Explain to whoever is nearby what an <b>artifact</b> is, and the difference between saying <i>make it bigger</i> and <i>make it twice as wide</i>."
   ]
 };
 
 const MISSIONS = [
+  /* ============ 01 · all prompts given ============ */
   {
     n:1, stars:1, title:"The Atom Factory", learn:"Click, count, and make it feel good", ready:true,
+    given:"Every prompt written out for you",
     story:[
       "Everything around you is made of <b>atoms</b>. In the middle sits the <b>nucleus</b> — heavy, crowded, positive. Whizzing around it are <b>electrons</b> — tiny, fast, negative. Opposites attract, so the nucleus holds its electrons like a magnet holding a swarm of bees.",
-      "But electrons can't fly wherever they like. They have to sit in <b>shells</b>, like seats in a stadium."
+      "But electrons cannot fly wherever they like. They sit in <b>shells</b>, like seats in a stadium."
     ],
     rule:"Shell 1 has 2 seats. Shell 2 has 8 seats. One electron = hydrogen. Two = helium, the balloon gas. Ten = neon, the sign gas.",
     story2:[
-      "Atoms with completely full shells are the calmest atoms in the universe. They don't react with anything, so chemists call them the <b>noble gases</b>. Almost all of chemistry is just atoms swapping electrons, trying to fill up their seats."
+      "Atoms with completely full shells are the calmest atoms in the universe. They react with nothing, so chemists call them the <b>noble gases</b>. Almost all of chemistry is atoms swapping electrons, trying to fill their seats."
     ],
-    ask:"Helium balloons are safe, but hydrogen balloons explode. Both are gases. What's different about their shells?",
+    ask:"Helium balloons are safe, hydrogen balloons explode. Both are gases. What is different about their shells?",
     goal:"Build an atom factory. Click the nucleus to knock electrons loose, fill shell 1, then shell 2 — and level up from hydrogen to helium to neon.",
     steps:[
-      {h:"Start the engine", p:"Make a game with a big glowing atom nucleus in the middle of the screen. When I click the nucleus, one electron pops out and flies into a circle orbit around it. Show a counter of how many electrons I have collected.", note:"This is the longest prompt of the day — about 40 words. Say what you see, what you do, and what happens."},
-      {h:"Fill shell 1", p:"The first shell can only hold 2 electrons. When it is full, show the word HELIUM and start a second, bigger orbit ring."},
-      {h:"Fill shell 2", p:"The second shell holds 8 electrons. When that is full, show NEON and the words FULL SHELLS = HAPPY ATOM.", note:"Stop and look: 2 then 8. That's the real rule the whole periodic table is built on."},
-      {h:"Add the juice", p:"Make the nucleus shake and flash brighter every time I click it.", ask:"Did that make the game better, or make it more fun? Those are two different things."},
-      {h:"Producer's call", p:"", note:"Your turn — no help. Add one thing you want: a sound, a clicks-per-second meter, electrons that drift away if you're too slow. Type it yourself. If it breaks the game, undo and describe it a different way."},
-      {h:"Stamp it", p:"Add a title screen that says [MY STUDIO NAME] PRESENTS: ATOM FACTORY, with a START button.", note:"Every game you make gets this screen. That's how people know it's yours."}
+      {h:"Start the engine", rung:"copy",
+       p:"Make a game with a big glowing atom nucleus in the middle of the screen. When I click the nucleus, one electron pops out and flies into a circle orbit around it. Show a counter of how many electrons I have collected.",
+       note:"The longest prompt of the day, about 40 words. It says what you see, what you do, and what happens.",
+       see:"A nucleus in the middle. Clicking it adds an electron to a ring, and the counter goes up.",
+       ifnot:"Say: “Nothing happens when I click the nucleus. Each click should add one electron to the orbit.”"},
+      {h:"Fill shell 1", rung:"copy",
+       p:"The first shell can only hold 2 electrons. When it is full, show the word HELIUM and start a second, bigger orbit ring.",
+       see:"After two clicks the word HELIUM appears and a wider ring shows up.",
+       ifnot:"Say: “The first ring took more than 2 electrons. It must stop at exactly 2.”"},
+      {h:"Fill shell 2", rung:"copy",
+       p:"The second shell holds 8 electrons. When that is full, show NEON and the words FULL SHELLS = HAPPY ATOM.",
+       note:"Stop and look: 2 then 8. That is the real rule the whole periodic table is built on.",
+       see:"Ten electrons in total gives you NEON.",
+       ifnot:"Say: “The second ring is not stopping at 8 electrons. Make 10 the total for NEON.”"},
+      {h:"Add the juice", rung:"copy",
+       p:"Make the nucleus shake and flash brighter every time I click it.",
+       see:"The nucleus jumps a little and glows on every click.",
+       ifnot:"Say: “I cannot see the nucleus shaking. Make the shake bigger and the flash brighter.”",
+       ask:"Did that make the game better, or make it more fun? Those are two different things."},
+      {h:"Producer's call", rung:"copy",
+       note:"Your turn — no help. Add one thing you want: a sound, a clicks-per-second meter, electrons that drift away if you are too slow. Type it yourself. If it breaks the game, undo and describe it a different way.",
+       see:"Whatever you asked for, doing what you pictured.",
+       ifnot:"Say what you see instead of what you wanted, in one sentence."},
+      {h:"Stamp it", rung:"copy",
+       p:"Add a title screen that says [MY STUDIO NAME] PRESENTS: ATOM FACTORY, with a START button.",
+       note:"Every game gets this screen. That is how people know it is yours.",
+       see:"A title screen with your studio name, and a button that starts the game.",
+       ifnot:"Say: “The title screen does not go away when I press START. Make START open the game.”"}
     ],
     play:[
       "Play it for real. No talking, no fixing — just play.",
-      "Write <b>one patch note</b>: the single most annoying thing, described exactly. Send it to your lead developer and watch it get fixed.",
-      "Show someone in the house. Explain why neon is a happy atom."
+      "Write <b>one patch note</b>: the single most annoying thing, described exactly. Send it and watch it get fixed.",
+      "Show someone in the house. Explain why neon is a happy atom.",
+      "<b>Ship it:</b> download the artifact as HTML and put it in your arcade."
     ]
   },
-  {n:2, stars:1, title:"Brick Catcher", learn:"Arrow keys and catching things",
-   goal:"Move a basket left and right to catch falling LEGO bricks before they hit the ground.",
-   founding:"A game where I use the left and right arrow keys to catch falling LEGO bricks with a basket. Show my score."},
-  {n:3, stars:2, title:"Meteor Dodge", learn:"Random obstacles and losing",
-   goal:"Fly a spaceship through falling meteors. One hit and it's over.",
-   founding:"A spaceship game where I dodge random meteors falling from the top. Game over if one hits me."},
-  {n:4, stars:2, title:"Extreme Table Tennis", learn:"Bouncing and a computer opponent",
-   goal:"Beat a computer paddle at ping pong — while the ball gets faster every single hit.",
-   founding:"Create a ping pong game against a computer opponent. The ball speeds up every time it hits a paddle."},
-  {n:5, stars:2, title:"Science Memory Match", learn:"Remembering what's face up",
-   goal:"Flip cards two at a time and match the science symbols: H2O, CO2, O2.",
-   founding:"A memory match card game using science symbols like H2O, CO2 and O2. Two cards flip at a time."},
-  {n:6, stars:3, title:"Angry Blocks", learn:"Gravity, force, and things falling over",
-   goal:"Drag, aim, fire. Knock down a tower of bricks with three shots.",
-   founding:"A physics game like Angry Birds where I drag and shoot a ball to knock down a tower of bricks. I get three shots."},
-  {n:7, stars:3, title:"Typing Defender", learn:"Matching letters in real time",
-   goal:"Words fall from the sky. Type them correctly to shoot them out of the air.",
-   founding:"Words are falling from the sky. I must type the word correctly to fire a laser and destroy it."},
-  {n:8, stars:3, title:"Laser Maze Runner", learn:"Moving in two directions, and walls",
-   goal:"Use WASD to reach the exit without touching a single laser wall.",
-   founding:"A maze game where I use WASD to move a character to the exit without touching the laser walls."},
-  {n:9, stars:3, title:"T-Rex Dash", learn:"Jumping, and fake endless scrolling",
-   goal:"Run forever. Jump the cactus. Beat your own distance.",
-   founding:"An endless runner game like the Chrome dinosaur. Spacebar to jump over obstacles. Show the distance."},
-  {n:10, stars:3, title:"Tower Climber", learn:"A camera that follows you",
-   goal:"Jump from platform to platform and climb as high as you can. The screen climbs with you.",
-   founding:"A platformer where I jump on moving platforms to go as high as possible. The camera follows me upward."}
+
+  /* ============ 02 · ~83% given ============ */
+  {
+    n:2, stars:1, title:"Brick Catcher", learn:"Arrow keys, catching, and your own reaction time", ready:true,
+    given:"4 prompts given, 2 you fill in",
+    story:[
+      "Your nerves are fast, but they are not instant. A signal from your eye to your brain to your hand travels at roughly 100 metres per second — quick, but nothing like the speed of light.",
+      "Add up the whole trip and it takes about <b>250 milliseconds</b>: a quarter of a second between seeing a thing and moving your hand. Every catch you have ever made, you made a quarter of a second late."
+    ],
+    rule:"Test it. Have someone hold a ruler straight up and drop it between your fingers without warning. Catch it, then look at the number where you caught it: 5 cm ≈ 0.10 s, 10 cm ≈ 0.14 s, 20 cm ≈ 0.20 s, 30 cm ≈ 0.25 s.",
+    story2:[
+      "Now the useful part. Today you set how fast the bricks fall — and you will set it using <b>your own measured number</b>. That is what real designers do: they measure a human, then build the machine around them."
+    ],
+    ask:"If your reaction time is a quarter of a second, where must a brick still be when you decide to move the basket?",
+    goal:"Catch falling LEGO bricks in a basket — with the falling speed tuned to your own reaction time.",
+    steps:[
+      {h:"Start the engine", rung:"copy",
+       p:"Make a game where I move a basket left and right with the arrow keys to catch LEGO bricks falling from the top. Show my score, and add one point for every brick I catch.",
+       see:"A basket you can move with the arrow keys, bricks falling, score going up on a catch.",
+       ifnot:"Say: “The basket does not move when I press the arrow keys. Make the left and right arrow keys move it.”"},
+      {h:"Add a way to lose", rung:"copy",
+       p:"If a brick hits the ground I lose one life. Show 3 hearts at the top. When all hearts are gone, show GAME OVER and my final score.",
+       note:"A game you cannot lose is not a game. It is a screensaver.",
+       see:"Three hearts. Miss a brick and one disappears.",
+       ifnot:"Say: “I missed a brick and did not lose a heart. Losing a brick should remove one heart.”"},
+      {h:"Make it feel good", rung:"copy",
+       p:"Make the basket slide smoothly instead of jumping, and make a small flash and a pop sound when I catch a brick.",
+       see:"Movement that glides, and a little flash on every catch.",
+       ifnot:"Say: “The basket still jumps in steps. Make it move smoothly a few pixels at a time.”"},
+      {h:"Set the speed from your own body", rung:"fill",
+       fill:"Make each brick take ______ seconds to fall from the top of the screen to the bottom.",
+       hint:"Use the ruler test. A fair rule: about four times your reaction time. If you measured 0.25 s, put 1 second. Too hard? You are allowed to change the number and try again.",
+       note:"This is the first prompt with a hole in it. The sentence is packaging — the number is the decision.",
+       see:"Bricks that fall fast enough to be hard, slow enough to be catchable.",
+       ifnot:"Say: “The bricks are still falling at the old speed. Make each one take exactly N seconds to reach the bottom.”"},
+      {h:"Make it get harder", rung:"copy",
+       p:"Every 20 seconds, make the bricks fall a little faster and drop one extra brick at a time.",
+       see:"A calm start that turns busy after half a minute.",
+       ifnot:"Say: “The game feels the same after a minute. The bricks should be clearly faster by then.”"},
+      {h:"Stamp it, and add a golden brick", rung:"fill",
+       fill:"Add a title screen that says ______ PRESENTS: BRICK CATCHER. Also add a rare golden brick worth ______ points that falls about once every ______ bricks.",
+       hint:"Your studio name in the first hole. Then two design decisions: how big is the reward, and how rare is it? Big and rare, or small and common?",
+       see:"Your title screen, and a gold brick that shows up now and then and is worth more.",
+       ifnot:"Say: “I have not seen a golden brick in a whole game. Make it appear more often.”"}
+    ],
+    play:[
+      "Play three full games. Write down your best score.",
+      "Write <b>one patch note</b> about the thing that annoyed you most.",
+      "Ask someone else to play, and watch where they struggle without telling them anything.",
+      "<b>Ship it:</b> download the artifact and put it in your arcade."
+    ]
+  },
+
+  /* ============ 03 · ~67% given ============ */
+  {
+    n:3, stars:2, title:"Meteor Dodge", learn:"Random is not the same as fair", ready:true,
+    given:"3 prompts given, 2 you fill in, 1 all your own",
+    story:[
+      "Flip a coin twenty times and write down the results. You will almost certainly find a run of four or five heads in a row. That is not the coin being broken — that is what real randomness looks like. <b>Random clumps.</b>",
+      "This is a problem for games. If meteors appear in completely random places, sooner or later they will appear in a line across the whole screen and there will be nowhere to go. The player will not think “unlucky.” They will think “this game is broken.”"
+    ],
+    rule:"So game designers cheat. They add rules on top of the randomness: never two hard things in a row, always leave a gap the player can fit through, never spawn something the player cannot see coming.",
+    story2:[
+      "Almost every game you have played does this. The randomness you enjoy is carefully controlled randomness."
+    ],
+    ask:"If meteors appeared in totally random places with no rules at all, what unfair thing would eventually happen?",
+    goal:"Fly a spaceship through falling meteors — random enough to surprise you, controlled enough to be fair.",
+    steps:[
+      {h:"Start the engine", rung:"copy",
+       p:"Make a game where I fly a spaceship left and right with the arrow keys while meteors of random sizes fall from the top. If a meteor hits my ship the game is over. My score is how many seconds I survive.",
+       see:"A ship you steer, meteors of different sizes falling, a timer counting up.",
+       ifnot:"Say: “The meteors are all the same size. Make each one a random size.”"},
+      {h:"Make the randomness fair", rung:"copy",
+       p:"Never block the whole screen. There must always be a gap wide enough for my ship to fly through.",
+       note:"This one prompt is the whole science lesson. You just added a rule on top of the randomness.",
+       see:"However bad it gets, there is always somewhere to go.",
+       ifnot:"Say: “I got trapped with no way through. Always leave a gap at least twice as wide as my ship.”"},
+      {h:"Choose the pressure", rung:"fill",
+       fill:"Make a new meteor appear every ______ seconds.",
+       hint:"Under 0.5 is chaos. Over 2 is boring. Somewhere between is a game. Try one, play it, change it.",
+       see:"Meteors arriving at a rate that keeps you busy but not trapped.",
+       ifnot:"Say: “Meteors are still coming at the old rate. Make a new one appear every N seconds exactly.”"},
+      {h:"Make the crash count", rung:"copy",
+       p:"When my ship is hit, make it explode, shake the screen, and show my time in big letters with a TRY AGAIN button.",
+       see:"A crash that feels like a crash, and a button that restarts instantly.",
+       ifnot:"Say: “After I crash I have to reload the page. Make TRY AGAIN start a new game.”"},
+      {h:"Choose the difficulty curve", rung:"fill",
+       fill:"Every ______ seconds, make the meteors fall ______ percent faster.",
+       hint:"Two numbers, and they fight each other. Small and often feels smooth. Big and rare feels like steps. Which do you want?",
+       see:"A game that is clearly harder at 60 seconds than at 10.",
+       ifnot:"Say: “It does not feel harder over time. Make the speed increase much bigger.”"},
+      {h:"Your own idea", rung:"build",
+       task:"Add one thing that makes the game more exciting or more fair. Then add your studio title screen.",
+       example:"Give me a shield I can turn on with the spacebar. It lasts 3 seconds and I can only use it once per game.",
+       note:"No prompt this time. Use the four-part checklist and write it yourself. There is an example behind the button if you want a look.",
+       see:"Your idea, working the way you pictured it.",
+       ifnot:"Do not rewrite the whole thing. Say the one part that is wrong, in one sentence."}
+    ],
+    play:[
+      "Play until you beat 60 seconds.",
+      "Write <b>one patch note</b>.",
+      "Find the moment the game felt unfair, and describe exactly what happened.",
+      "<b>Ship it:</b> download the artifact and put it in your arcade."
+    ]
+  },
+
+  /* ============ 04 · ~58% given ============ */
+  {
+    n:4, stars:2, title:"Extreme Table Tennis", learn:"Angle in equals angle out", ready:true,
+    given:"2 prompts given, 3 you fill in, 1 all your own",
+    story:[
+      "Throw a ball at a flat wall straight on and it comes straight back. Throw it at a slant and it leaves at the same slant, mirrored. The angle it arrives at equals the angle it leaves at. Always.",
+      "That one rule explains a mirror, an echo bouncing off a canyon, a laser in a fibre optic cable, and every shot you have ever played in table tennis."
+    ],
+    rule:"Angle in = angle out. It is called the law of reflection, and it is true for light, sound, and bouncing balls.",
+    story2:[
+      "But here is the thing that makes Pong a <b>game</b> instead of a rally that never ends. Real paddles are not flat. In table tennis you tilt the bat. In this game, <b>where</b> the ball hits the paddle changes where it goes — edge shots go steep, middle shots go straight. That one trick is why you can aim."
+    ],
+    ask:"If the paddle were perfectly flat and the rule was always angle in equals angle out, could you ever change where the ball goes?",
+    goal:"Beat a computer paddle at ping pong — and learn to aim by hitting the ball with the edge.",
+    steps:[
+      {h:"Start the engine", rung:"copy",
+       p:"Make a ping pong game. I control the left paddle with the up and down arrow keys and the computer controls the right paddle. The ball bounces off the top and bottom walls. First to 5 points wins.",
+       see:"Two paddles, a bouncing ball, a score, and a computer that plays back.",
+       ifnot:"Say: “The computer paddle does not move. Make it follow the ball up and down.”"},
+      {h:"Add the aiming trick", rung:"copy",
+       p:"Where the ball hits my paddle should change its angle. Hitting near the edge sends the ball away steeply. Hitting the middle sends it back straight.",
+       note:"This is the science, in one prompt. Now the paddle is a tool instead of a wall.",
+       see:"Edge hits fly off at a slant. Middle hits come straight back.",
+       ifnot:"Say: “Every hit comes back at the same angle. The edge of the paddle should send the ball off much steeper.”"},
+      {h:"Choose the acceleration", rung:"fill",
+       fill:"Make the ball ______ percent faster every time it hits a paddle.",
+       hint:"5 percent is a slow build. 20 percent gets terrifying in about eight hits. This is the whole feel of the game.",
+       see:"Rallies that start calm and end frantic.",
+       ifnot:"Say: “The ball speed feels the same after ten hits. Make each hit increase it by exactly N percent.”"},
+      {h:"Choose your opponent's skill", rung:"fill",
+       fill:"Make the computer opponent miss about ______ balls out of every 10.",
+       hint:"0 is unbeatable and no fun. 5 is a coin flip. Around 2 or 3 is where a good opponent lives.",
+       note:"You just set difficulty with a number instead of a word. Never write “make it easier” again.",
+       see:"A computer you can beat, but not every time.",
+       ifnot:"Say: “The computer never misses. It should miss about N out of every 10 balls.”"},
+      {h:"See the angles", rung:"fill",
+       fill:"Make the ball leave a ______ trail behind it so I can see the angle it is travelling at.",
+       hint:"Colour, length, fading or solid — you decide. You are making the physics visible.",
+       see:"A trail that shows you the line of the shot.",
+       ifnot:"Say: “The trail is too short to see the angle. Make it about three times longer.”"},
+      {h:"Your own twist", rung:"build",
+       task:"Add one thing that changes how the ball bounces. Then add your studio title screen.",
+       example:"Put a small square block in the middle of the table that the ball bounces off.",
+       note:"Write this one yourself. Checklist first, then type.",
+       see:"Your twist, changing how rallies play out.",
+       ifnot:"Say the one thing that is wrong, not the whole idea again."}
+    ],
+    play:[
+      "Play until you win 5–0. Notice which part of the paddle you aim with.",
+      "Write <b>one patch note</b>.",
+      "Explain to someone why hitting the edge changes the angle.",
+      "<b>Ship it:</b> download the artifact and put it in your arcade."
+    ]
+  },
+
+  /* ============ 05 · 50% given ============ */
+  {
+    n:5, stars:2, title:"Science Memory Match", learn:"Your memory holds about four things", ready:true,
+    given:"Half given, half your own",
+    story:[
+      "Hold out your hand and try to keep six different phone numbers in your head. You cannot. Nobody can.",
+      "The part of your brain that holds things you are using <i>right now</i> is called <b>working memory</b>, and it fits about <b>four items</b> at a time. Older books said seven; careful experiments pushed it down to about four."
+    ],
+    rule:"But there is a loophole, and it is called <b>chunking</b>. 1 9 9 5 2 0 2 6 is eight items and you will lose it. “1995” and “2026” is two items and you will keep it. Same information, less space.",
+    story2:[
+      "You will feel this limit today, exactly, while you play. Twelve cards is far more than four — so you cannot brute-force it. You have to chunk: remember <i>positions in groups</i>, not one card at a time."
+    ],
+    ask:"You can hold about four cards in your head. So what is the smartest possible first move in this game?",
+    goal:"Flip cards two at a time and match the science symbols — and find out exactly where your memory runs out.",
+    steps:[
+      {h:"Start the engine", rung:"copy",
+       p:"Make a memory match game with 12 cards face down in a grid. The cards show science symbols like H2O, CO2, O2, NaCl, CH4 and O3, two of each. I click two cards to flip them. If they match they stay face up. If not, they flip back. Count my moves.",
+       see:"Twelve face-down cards, two flip at a time, matches stay up, the move counter goes up.",
+       ifnot:"Say: “The cards do not flip back when they do not match. They should turn face down again.”"},
+      {h:"Set the thinking time", rung:"fill",
+       fill:"When two cards do not match, wait ______ seconds before flipping them back.",
+       hint:"Too fast and you cannot memorise them. Too slow and you are waiting around. This one number decides whether the game is fair.",
+       note:"You are tuning the game to a real limit inside your own head.",
+       see:"Just enough time to see both cards and remember where they were.",
+       ifnot:"Say: “The cards flip back before I can read them. Wait exactly N seconds.”"},
+      {h:"Add a score worth beating", rung:"copy",
+       p:"Show a timer and a move counter. When I finish, show my time and moves, and remember my best result so I can try to beat it.",
+       see:"Your finish stats, and a best score that survives a new game.",
+       ifnot:"Say: “My best score disappears when I start a new game. Keep it on screen.”"},
+      {h:"Choose the size of the challenge", rung:"fill",
+       fill:"Use ______ pairs of cards, laid out ______ across and ______ down.",
+       hint:"Remember: your working memory holds about four. Six pairs is a warm-up. Ten pairs is a real test. Make sure the numbers actually multiply to the right total.",
+       see:"A grid that is genuinely hard but not hopeless.",
+       ifnot:"Say: “The grid does not fit on the screen. Make the cards smaller so all of them are visible at once.”"},
+      {h:"Make matching feel great", rung:"build",
+       task:"Make a match feel satisfying, and a wrong guess feel like a small mistake instead of a punishment.",
+       example:"When two cards match, make them spin once and glow green before they disappear. When they do not match, shake them gently.",
+       note:"No prompt. Checklist, then write it. Remember to say <i>how much</i>.",
+       see:"A reward you can feel every time you get one right.",
+       ifnot:"Say what happens now and what you wanted instead, in one sentence."},
+      {h:"Your own rule", rung:"build",
+       task:"Add one rule of your own that changes how the game is played, and add your studio title screen.",
+       example:"Give me 60 seconds to finish the whole board. If time runs out, I lose.",
+       see:"A game that plays differently because of your rule.",
+       ifnot:"Fix one part at a time. Never re-describe the whole game."}
+    ],
+    play:[
+      "Play once normally. Then play again trying to chunk positions in groups.",
+      "Did chunking help? Say by how many moves.",
+      "Write <b>one patch note</b>.",
+      "<b>Ship it:</b> download the artifact and put it in your arcade."
+    ]
+  },
+
+  /* ============ 06 · ~40% given ============ */
+  {
+    n:6, stars:3, title:"Angry Blocks", learn:"Where to hit a tower so it falls", ready:true,
+    given:"1 prompt given, 2 you fill in, 2 all your own",
+    story:[
+      "Every object has a <b>centre of mass</b> — one single point where all its weight behaves as if it lives. For a tower of bricks it sits somewhere in the middle, and everything about falling over depends on it.",
+      "Here is the rule: a tower stands as long as its centre of mass is above its base. Push it far enough that the centre of mass hangs out past the edge, and gravity does the rest. It does not need help. It falls on its own."
+    ],
+    rule:"Hit a tower high and you knock one brick off. Hit it low and the whole thing rotates, the centre of mass swings out past the base, and everything comes down.",
+    story2:[
+      "Try it: stand a full water bottle on the table. Push the top — it tips and rights itself. Push the bottom — it slides. Push about a third of the way up, hard, and it goes over. Now you know where to aim."
+    ],
+    ask:"You get one shot at a five-brick tower. Where do you aim, and why?",
+    goal:"Drag, aim, fire. Bring down a whole tower with three shots by aiming where it matters.",
+    steps:[
+      {h:"Start the engine", rung:"copy",
+       p:"Make a physics game where I drag backwards from a ball to aim, and let go to fire it at a tower of bricks on the right. The bricks should fall over realistically and knock into each other. I get 3 shots. Score one point for every brick knocked off the tower.",
+       note:"This is the biggest single prompt in the whole course. Real physics is hard, so expect it to be a bit odd the first time.",
+       see:"A ball you can drag and fire, a tower that actually topples when hit.",
+       ifnot:"Say: “The bricks do not fall over, they just disappear. Make them tip and tumble into each other.”"},
+      {h:"Set the weight of the world", rung:"fill",
+       fill:"Set gravity so the ball flies in a ______ arc, and make it feel ______.",
+       hint:"Low gravity is floaty and slow, like the moon. High gravity is a heavy cannonball that drops fast. Words like floaty, heavy, snappy are allowed here — you are describing feel.",
+       note:"Feel is a real specification. Say it, then test it, then adjust.",
+       see:"A shot arc you can learn to predict after a few tries.",
+       ifnot:"Say: “The ball drops too quickly to aim. Make gravity about half as strong.”"},
+      {h:"Design the target", rung:"fill",
+       fill:"Build the tower ______ bricks tall and ______ bricks wide, and make the bottom bricks ______ than the top ones.",
+       hint:"Think about the centre of mass. A tall narrow tower topples easily. A wide one needs a real hit at the bottom. Heavier bricks at the bottom make it stubborn.",
+       see:"A tower that survives a bad shot and collapses on a good one.",
+       ifnot:"Say: “The tower falls over by itself before I shoot. Make the base wider.”"},
+      {h:"Make the collapse satisfying", rung:"build",
+       task:"Make the moment the tower comes down feel as good as possible.",
+       example:"When bricks hit the ground make dust puff up, shake the screen a little, and play a crunch sound.",
+       note:"Checklist first. This is the whole payoff of the game — spend your words on it.",
+       see:"A collapse you want to watch again.",
+       ifnot:"Name the one part that is missing, not the whole effect."},
+      {h:"Your own level", rung:"build",
+       task:"Add a second, harder level after I win the first one, and add your studio title screen.",
+       example:"After I knock down the first tower, load a second level with a taller tower and only 2 shots.",
+       see:"A game with more than one thing to beat.",
+       ifnot:"Say: “Level 2 never appears after I win. It should load as soon as the first tower is down.”"}
+    ],
+    play:[
+      "Play all three shots. Try one game aiming only at the top, one aiming only at the bottom.",
+      "Which worked better? Explain it using the words centre of mass.",
+      "Write <b>one patch note</b>.",
+      "<b>Ship it:</b> download the artifact and put it in your arcade."
+    ]
+  },
+
+  /* ============ 07 · ~30% given ============ */
+  {
+    n:7, stars:3, title:"Typing Defender", learn:"Practice physically rebuilds your brain", ready:true,
+    given:"1 prompt given, 1 you fill in, 3 all your own",
+    story:[
+      "Look at your own typing log on this page. Your first score and your latest score are different numbers. Nothing about your fingers changed. So what did?",
+      "Signals travel along nerve fibres, and the fibres you use a lot get wrapped in a fatty insulation called <b>myelin</b>. More wrapping means a faster, cleaner signal. Practice literally builds physical material in your brain."
+    ],
+    rule:"This is why practice beats talent over time, and why it has to be spread out. You cannot build myelin in one long panic session the night before — it needs many short repeats, which is exactly what ten minutes a week is.",
+    story2:[
+      "So today's game is not really about the game. It is a machine for the thing that made your WPM go up, disguised as a laser."
+    ],
+    ask:"Your typing has gone up since your first test. Your fingers are the same. What actually changed?",
+    goal:"Words fall from the sky. Type them correctly to blast them out of the air — and turn your warm-up into a weapon.",
+    steps:[
+      {h:"Start the engine", rung:"copy",
+       p:"Make a game where words fall slowly from the top of the screen. I type a word on my keyboard, and when I type it correctly a laser fires from the bottom and destroys that word. If a word reaches the ground I lose a life. I have 3 lives. Show my score.",
+       see:"Falling words, a laser that fires on a correct word, lives that go down on a miss.",
+       ifnot:"Say: “Typing the word does nothing. Watch my keyboard and destroy the word when I have typed all its letters correctly.”"},
+      {h:"Choose your word list", rung:"fill",
+       fill:"Use words that are ______ to ______ letters long, and have about ______ words falling at the same time.",
+       hint:"Short words are quick but the screen fills up. Long words take time but you clear more per word. Three numbers, one feel.",
+       see:"A screen busy enough to be tense and readable enough to type.",
+       ifnot:"Say: “There are too many words on screen to read any of them. Show only N at a time.”"},
+      {h:"Show my typing", rung:"build",
+       task:"Make it obvious which word I am typing and how far through it I am.",
+       example:"Highlight the word I am currently typing in yellow, and colour each letter green as I type it correctly.",
+       note:"This is the single most important feature in the game. Without it you are typing blind.",
+       see:"Letters changing as you type them, so you always know where you are.",
+       ifnot:"Say exactly what you see happening to the letters right now."},
+      {h:"Make it get harder", rung:"build",
+       task:"Make the game speed up as I get better at it, in a way that feels fair.",
+       example:"Every 30 seconds make the words fall 15 percent faster and add one more word on screen.",
+       note:"You have done this in three missions now. Say the how much without being asked.",
+       see:"A game that is noticeably harder after a minute.",
+       ifnot:"Name the number that is wrong and give the new one."},
+      {h:"Your own weapon", rung:"build",
+       task:"Add one special word or power that changes the game, and add your studio title screen.",
+       example:"Make a rare red word. If I type it, every word on screen is destroyed at once.",
+       see:"Your idea working, and your studio name on the front.",
+       ifnot:"One sentence, one problem."}
+    ],
+    play:[
+      "Play three games. Compare your score to your WPM — do they move together?",
+      "Write <b>one patch note</b>.",
+      "Look at the typing log at the top of this page and say out loud what myelin has been doing.",
+      "<b>Ship it:</b> download the artifact and put it in your arcade."
+    ]
+  },
+
+  /* ============ 08 · ~20% given ============ */
+  {
+    n:8, stars:3, title:"Laser Maze Runner", learn:"A rule with no thinking in it", ready:true,
+    given:"2 you fill in, 3 all your own",
+    story:[
+      "Put your left hand on the wall of a maze and walk without ever taking it off. You will look ridiculous. You will walk down dead ends and come back out. And you will reach the exit, every time, on any maze whose walls are all connected.",
+      "That is an <b>algorithm</b>: a rule you follow exactly, with no cleverness and no thinking. It does not need to understand the maze. It just needs to be followed."
+    ],
+    rule:"Left hand on the wall. Never let go. You will always get out. It is not the fastest route — it is the route that cannot fail.",
+    story2:[
+      "This is what code actually is. Not intelligence — just rules, followed exactly, faster than you could follow them. Everything Claude builds for you is made of rules like this one, stacked up.",
+      "From here on, almost nothing is written out for you. You have the checklist and you have done this seven times."
+    ],
+    ask:"Can a rule with no thinking in it really solve a maze that nobody has ever seen before?",
+    goal:"Reach the exit with WASD without touching a laser wall — then try beating your own maze with your left hand.",
+    steps:[
+      {h:"Start the engine", rung:"fill",
+       fill:"Make a maze game where I move with ______, and I have to reach ______ without touching ______.",
+       hint:"Your first founding prompt with holes in it. Fill the three gaps, then add anything else the game needs — the checklist will tell you what is missing.",
+       note:"After you fill the holes, read it back and ask: what I see, what I do, what happens, how much. Add the parts it is missing.",
+       see:"A maze on screen, a character that moves with your keys, an exit to reach.",
+       ifnot:"Say: “My character walks straight through the walls. Make the walls solid so I cannot pass through them.”"},
+      {h:"Size the maze", rung:"fill",
+       fill:"Make the maze ______ squares wide and ______ squares tall, and make my character ______.",
+       hint:"Small mazes are solved by accident. Big mazes need the left-hand rule. Your character has to be smaller than a corridor.",
+       see:"A maze big enough that you cannot see the answer instantly.",
+       ifnot:"Say: “My character is too big to fit through the corridors. Make it smaller than one square.”"},
+      {h:"Make the lasers dangerous", rung:"build",
+       task:"Make the laser walls a real threat, so touching them matters.",
+       example:"If I touch a laser I go back to the start and lose one of my 3 lives. Make the lasers pulse red so I can see them.",
+       see:"A cost for a mistake, and lasers you can spot.",
+       ifnot:"One sentence about what happens when you touch one now."},
+      {h:"Add a reason to hurry", rung:"build",
+       task:"Give the maze a second level that is harder than the first, and a way to compare how well I did.",
+       example:"Show a timer, save my best time, and load a bigger maze when I reach the exit.",
+       see:"Something to beat, and somewhere to go after you win.",
+       ifnot:"Name the missing part only."},
+      {h:"Your own maze", rung:"build",
+       task:"Add one thing that makes this maze yours, and add your studio title screen.",
+       example:"Put three keys in the maze that I have to collect before the exit will open.",
+       see:"A maze nobody else has.",
+       ifnot:"One problem per message."}
+    ],
+    play:[
+      "Solve it normally. Then solve it again using only the left-hand rule and see if it works.",
+      "Write <b>one patch note</b>.",
+      "Explain to someone what an algorithm is, using the maze.",
+      "<b>Ship it:</b> download the artifact and put it in your arcade."
+    ]
+  },
+
+  /* ============ 09 · ~12% given ============ */
+  {
+    n:9, stars:3, title:"T-Rex Dash", learn:"Who is actually moving?", ready:true,
+    given:"1 you fill in, 3 all your own",
+    story:[
+      "Sit on a train, look out at the train beside you, and watch it slide backwards. For a second you cannot tell which one moved. You need something else to look at — the platform, the sky — before you know.",
+      "That is a <b>frame of reference</b>. Motion is never absolute; it is always motion compared to something else."
+    ],
+    rule:"In every endless runner ever made, the character does not move forward at all. It stays in one place and the whole world slides past it. The running is a lie, and it works perfectly.",
+    story2:[
+      "This is one of the oldest tricks in games, and it is cheaper than the truth: instead of building a hundred kilometres of desert, you build a few metres and scroll it past for ever.",
+      "Only one hole is filled in for you today. The rest is yours."
+    ],
+    ask:"In the Chrome dinosaur game, is the dinosaur moving forward, or is the ground moving backwards? How could you tell?",
+    goal:"Build an endless runner where the ground moves and the runner stays — and make the jump feel exactly right.",
+    steps:[
+      {h:"Start the engine", rung:"fill",
+       fill:"Make an endless runner game where I press ______ to jump over ______, and my score is ______.",
+       hint:"Fill the three holes, then read it back against the checklist and add whatever it is missing before you send it.",
+       note:"After this, no more prompts are written for you. You know how to do this.",
+       see:"A character on a scrolling ground, obstacles coming at you, a jump that works.",
+       ifnot:"Say: “The character moves across the screen and leaves. It should stay in place while the ground moves under it.”"},
+      {h:"Make the jump feel right", rung:"build",
+       task:"Tune the jump until it feels good: how high, how fast up, how fast down.",
+       example:"Make the jump about three times my character's height, quick going up and a little slower coming down.",
+       note:"Real game studios spend weeks on this one thing. Try a number, play it, change it, three times minimum.",
+       see:"A jump that clears an obstacle without feeling floaty or heavy.",
+       ifnot:"Say which part is wrong — going up, hanging in the air, or coming down."},
+      {h:"Keep it interesting", rung:"build",
+       task:"Make the game get harder and stop being repetitive.",
+       example:"Add a second kind of obstacle I have to duck under, and speed everything up by 10 percent every 20 seconds.",
+       see:"A run where minute two is different from minute one.",
+       ifnot:"One sentence, one fix."},
+      {h:"Make it yours", rung:"build",
+       task:"Add your own character, your own world, a high score that is saved, and your studio title screen.",
+       example:"Replace the dinosaur with a robot, set it on Mars with two moons in the sky, and keep my best distance on screen.",
+       see:"A game that looks like nobody else's.",
+       ifnot:"Fix one thing at a time."}
+    ],
+    play:[
+      "Run until you beat your own distance twice.",
+      "Write <b>one patch note</b>.",
+      "Point at the screen and explain who is really moving.",
+      "<b>Ship it:</b> download the artifact and put it in your arcade."
+    ]
+  },
+
+  /* ============ 10 · 0% given ============ */
+  {
+    n:10, stars:3, title:"Tower Climber", learn:"Four machines at once", ready:true,
+    given:"Nothing given. All yours.",
+    story:[
+      "This game is four machines running at the same time. The <b>player</b>, who jumps. The <b>platforms</b>, which appear and move. The <b>camera</b>, which follows you upward. The <b>difficulty</b>, which grows as you climb.",
+      "You cannot describe four machines in one sentence, and you should not try. The trick that professionals use is called <b>decomposition</b>: name the parts, describe each one on its own, then say how they connect."
+    ],
+    rule:"Today you write on paper before you touch the keyboard. Four boxes — player, platforms, camera, difficulty — and a few lines in each. Five minutes of thinking buys you fifteen minutes of building.",
+    story2:[
+      "Ten weeks ago every word was written out for you. Today nothing is. That is not because this one is easier — it is the hardest thing you have built. It is because you can do it now."
+    ],
+    ask:"Which of the four machines would break the game most if you got it wrong?",
+    goal:"Build a tower climber where the camera follows you up for ever — and write the entire specification yourself.",
+    steps:[
+      {h:"Write the spec on paper", rung:"build",
+       task:"Before you type anything, write four boxes on paper — player, platforms, camera, difficulty — and fill each one using the checklist. No keyboard yet.",
+       example:"PLAYER: jumps automatically, moves left and right with arrow keys, dies if it falls off the bottom. PLATFORMS: appear at random spacing above, some move side to side. CAMERA: follows me upward and never comes back down. DIFFICULTY: platforms get further apart the higher I go.",
+       note:"This is the real work of the mission. Take the full five minutes.",
+       see:"Four boxes on paper with real sentences in them, not single words.",
+       ifnot:"If a box is empty, you have not decided yet. Decide before you type."},
+      {h:"Build the first machine", rung:"build",
+       task:"Turn your paper spec into your opening prompt and send it. Get the player and the platforms working first — ignore the camera for now.",
+       example:"Make a platformer where my character bounces automatically and I move it left and right with the arrow keys. Platforms are spread up the screen. If I fall off the bottom, the game is over.",
+       note:"Build one machine at a time. Nobody, anywhere, builds four at once.",
+       see:"A character that bounces on platforms and dies if it falls.",
+       ifnot:"Say the one part that is wrong. Resist rewriting the whole prompt."},
+      {h:"Add the camera", rung:"build",
+       task:"Make the view follow you upward as you climb, so you can go for ever.",
+       example:"Make the camera follow me upward as I climb. It should never scroll back down, and new platforms should appear above me endlessly.",
+       note:"This is the hard one. Expect two or three tries and stay calm.",
+       see:"Endless climbing, with new platforms always appearing above.",
+       ifnot:"Say: “The camera goes back down when I fall. It should only ever move upward.”"},
+      {h:"Finish the studio", rung:"build",
+       task:"Add the difficulty curve, a height score, moving platforms, your studio title screen — and ship it.",
+       example:"Make platforms further apart the higher I go, add platforms that slide side to side, show my height in metres and save my best.",
+       note:"This is the last game of the course. Make it the one you want people to play.",
+       see:"A finished game with your studio's name on the front.",
+       ifnot:"One sentence, one problem — the same way you have done it nine times."}
+    ],
+    play:[
+      "Climb until you beat your own record twice.",
+      "Write <b>one patch note</b>.",
+      "Open your arcade and play all ten games in order. Look at how far mission 01 is from mission 10.",
+      "<b>Ship it:</b> download the artifact and put it in your arcade. That is the tenth brick."
+    ]
+  }
 ];
 
 const ALL = [UNIT0, ...MISSIONS];
 
 /* ---------------- state ---------------- */
 const KEY = "samuel-coding-studio-v1";
-let S = { studio:"SAMUEL CODING STUDIO", done:[], steps:{}, notes:{}, wpm:[], activity:{} };
+let S = { studio:"SAMUEL CODING STUDIO", done:[], steps:{}, notes:{}, wpm:[], activity:{}, hints:{}, help:"normal" };
 let openUnit = null;
 
 /* Works in two homes: inside Claude it uses the artifact store,
@@ -504,6 +1050,7 @@ async function load(){
   // older saves stored plain numbers; give them a date so the daily check still works
   S.wpm = (S.wpm||[]).map(e => typeof e === "number" ? {d:"earlier", v:e} : e);
   S.activity = S.activity || {};
+  S.hints = S.hints || {};
   render();
 }
 let saveTimer;
@@ -528,7 +1075,7 @@ function today(){
   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 }
 function todayTest(){ return (S.wpm||[]).find(e=>e.d===today()); }
-function locked(){ return !todayTest(); }
+function locked(){ return false; }   /* nothing is ever locked — he picks */
 
 function paintWPM(){
   const log=S.wpm||[];
@@ -549,15 +1096,15 @@ function paintWPM(){
   if(t){
     lic.classList.remove("gated");
     flag.style.background="var(--green)";
-    document.getElementById("gateTitle").textContent="Speed test done · missions open";
+    document.getElementById("gateTitle").textContent="Speed test done today";
     document.getElementById("gateSub").textContent =
-      t.v>=TARGET ? "Logged "+t.v+" WPM today — at or above target. Go build something."
-                  : "Logged "+t.v+" WPM today. Target is 30. Go build something.";
+      t.v>=TARGET ? "Logged "+t.v+" WPM today — at or above target. Nice."
+                  : "Logged "+t.v+" WPM today. Target is 30 whenever you get there.";
   }else{
-    lic.classList.add("gated");
-    flag.style.background="var(--red)";
-    document.getElementById("gateTitle").textContent="Speed test first";
-    document.getElementById("gateSub").textContent="Every class starts here. Take one timed test, log the number, and the missions unlock.";
+    lic.classList.remove("gated");
+    flag.style.background="var(--blue)";
+    document.getElementById("gateTitle").textContent="Speed test";
+    document.getElementById("gateSub").textContent="Take one whenever you feel like it. It takes a minute and the log likes numbers.";
   }
 
   const spark=document.getElementById("wpmSpark");
@@ -648,6 +1195,7 @@ function touch(unit, opts){
   const a=day(today());
   if(unit!==undefined && !a.units.includes(+unit)) a.units.push(+unit);
   if(opts && opts.brick!==undefined && !a.bricks.includes(+opts.brick)) a.bricks.push(+opts.brick);
+  if(opts && opts.hint){ a.hints=(a.hints||0)+1; }
   if(opts && opts.note!==undefined){
     a.notes=a.notes.filter(x=>x.u!==+unit);
     if(opts.note.trim()) a.notes.push({u:+unit, t:opts.note.trim()});
@@ -697,7 +1245,8 @@ function renderLog(){
     const a=S.activity[d]||{units:[],bricks:[],notes:[]};
     const tags=[
       ...a.bricks.map(b=>`<span class="tag brick">Brick ${b===0?"set up":b} ✔</span>`),
-      ...a.units.filter(u=>!a.bricks.includes(u)).map(u=>`<span class="tag">${unitName(u)}</span>`)
+      ...a.units.filter(u=>!a.bricks.includes(u)).map(u=>`<span class="tag">${unitName(u)}</span>`),
+      ...(a.hints?[`<span class="tag">${a.hints} example${a.hints>1?"s":""} opened</span>`]:[])
     ].join("");
     return `<div class="row">
       <div class="date">${prettyDate(d)}</div>
@@ -748,7 +1297,7 @@ document.getElementById("importFile").onchange=e=>{
       const data=JSON.parse(reader.result);
       if(!data || typeof data!=="object" || !("wpm" in data)) throw new Error("not a studio backup");
       if(!confirm("Restore this backup? Everything currently on this device will be replaced.")) return;
-      S=Object.assign({studio:"SAMUEL CODING STUDIO",done:[],steps:{},notes:{},wpm:[],activity:{}}, data);
+      S=Object.assign({studio:"SAMUEL CODING STUDIO",done:[],steps:{},notes:{},wpm:[],activity:{},hints:{}}, data);
       S.wpm=(S.wpm||[]).map(x=>typeof x==="number"?{d:"earlier",v:x}:x);
       S.activity=S.activity||{};
       save(); openUnit=null;
@@ -762,18 +1311,33 @@ document.getElementById("importFile").onchange=e=>{
   e.target.value="";
 };
 
+/* ---------------- help dial ---------------- */
+document.querySelectorAll("[data-help]").forEach(b=>{
+  b.onclick=()=>{
+    S.help=b.dataset.help; save();
+    if(openUnit!==null){
+      const u=ALL.find(x=>x.n===openUnit);
+      const box=document.getElementById("brief");
+      box.innerHTML=fullBrief(u); wire(u);
+    }
+    render();
+  };
+});
+function paintDial(){
+  document.querySelectorAll("[data-help]").forEach(b=>
+    b.setAttribute("aria-pressed", String((S.help||"normal")===b.dataset.help)));
+}
+
 /* ---------------- render ---------------- */
 function render(){
   nameEl.textContent = S.studio || "SAMUEL CODING STUDIO";
-
-  const gate=locked();
 
   const tower=document.getElementById("tower");
   tower.innerHTML="";
   ALL.forEach(u=>{
     const b=document.createElement("button");
     b.className="brick"+(u.zero?" setup":"")+(S.done.includes(u.n)?" done":(openUnit===u.n?" current":""))
-      +((gate && !u.zero && !S.done.includes(u.n))?" locked":"");
+      ;
     b.textContent = u.zero ? "SET UP" : u.n;
     b.setAttribute("aria-label", (u.zero?"Unit 0":"Mission "+u.n)+": "+u.title);
     b.onclick=()=>openBrief(u.n);
@@ -785,15 +1349,13 @@ function render(){
   list.innerHTML="";
   ALL.forEach(u=>{
     const c=document.createElement("button");
-    const isLocked = gate && !u.zero;
-    c.className="card"+(u.zero?" zero":"")+(S.done.includes(u.n)?" solved":(openUnit===u.n?" open":""))
-      +(isLocked?" locked":"");
-    const label = isLocked ? "Speed test first" :
-      (S.done.includes(u.n) ? (u.zero?"Ready ✔":"Built ✔") : (u.ready?"Open brief ▸":"Preview ▸"));
+    c.className="card"+(u.zero?" zero":"")+(S.done.includes(u.n)?" solved":(openUnit===u.n?" open":""));
+    const label = S.done.includes(u.n) ? (u.zero?"Ready ✔":"Built ✔") : "Open brief ▸";
     c.innerHTML=`<div class="num">${u.zero?"00":String(u.n).padStart(2,"0")}</div>
       <div><div class="title">${u.title}</div><div class="learn">${u.learn}</div></div>
       <div style="text-align:right">
         <div class="stars">${u.zero?"SETUP":"★".repeat(u.stars)+"☆".repeat(3-u.stars)}</div>
+        ${u.given?`<div class="hintcount">${u.given}</div>`:""}
         <div class="go">${label}</div>
       </div>`;
     c.onclick=()=>openBrief(u.n);
@@ -801,13 +1363,13 @@ function render(){
   });
   paintWPM();
   paintTimer();
+  paintDial();
   renderLog();
   const bf=document.getElementById("bfDate");
   if(bf && !bf.value) bf.value=today();
 }
 
 function openBrief(n){
-  if(n>0 && locked()){ sendToTest(); return; }
   openUnit = (openUnit===n) ? null : n;
   const box=document.getElementById("brief");
   if(openUnit===null){ box.classList.remove("show"); box.innerHTML=""; render(); return; }
@@ -826,16 +1388,58 @@ function head(u){
     <h2>${u.title}</h2></div>`;
 }
 
+/* the dial re-shapes any step: more help, as written, or none */
+function shaped(s){
+  const mode=S.help||"normal";
+  if(mode==="less"){
+    return Object.assign({},s,{rung:"build",
+      task: s.task || ("Get this working: "+(s.see||s.h)),
+      example: s.p || s.fill || s.example || ""});
+  }
+  if(mode==="more" && (s.rung||"copy")==="build" && s.example){
+    return Object.assign({},s,{rung:"copy", p:s.example});
+  }
+  return s;
+}
+
+function stepCore(u,s,i){
+  const rung=s.rung||"copy";
+  if(rung==="fill"){
+    const marked=s.fill.replace(/_{3,}/g,'<span class="blank">&nbsp;</span>');
+    return `<div class="prompt">${marked}</div>
+      <div class="prompt-foot"><span class="type-it">Type the whole sentence. You choose what goes in the gaps.</span>
+      <button class="mini" data-copy="${i}">Copy the frame</button></div>
+      ${s.hint?`<div class="guide"><b>You decide</b>${s.hint}</div>`:""}`;
+  }
+  if(rung==="build"){
+    return `<div class="task">${s.task}</div>
+      <div class="checklist">${CHECKLIST.map(c=>`<span>${c}</span>`).join("")}</div>
+      <div class="prompt-foot"><span class="type-it">Write this one yourself. The example is there if you want it.</span>
+      <button class="mini" data-show="${i}">Show me one</button></div>
+      <div class="hintbox" id="hint-${u.n}-${i}"><div class="prompt">${s.example||""}</div>
+      <div class="hintcount">One way to say it. Yours does not have to look like this.</div></div>`;
+  }
+  return s.p ? `<div class="prompt">${s.p}</div>
+      <div class="prompt-foot"><span class="type-it">Type it yourself — that is what the warm-up was for.</span>
+      <button class="mini" data-copy="${i}">Copy prompt</button></div>` : "";
+}
+
 function fullBrief(u){
-  const steps=u.steps.map((s,i)=>{
+  const steps=u.steps.map((raw,i)=>{
+    const s=shaped(raw);
     const on=(S.steps[u.n]||[]).includes(i);
+    const rung=s.rung||"copy";
     return `<li class="${on?"checked":""}">
       <div class="step-head"><span>${s.h}</span>
-        <label class="check"><input type="checkbox" data-step="${i}" ${on?"checked":""}> Done</label></div>
-      ${s.p?`<div class="prompt">${s.p}</div>
-        <div class="prompt-foot"><span class="type-it">Type it yourself — that's what the warm-up was for.</span>
-        <button class="mini" data-copy="${i}">Copy prompt</button></div>`:""}
+        <span style="display:flex;gap:8px;align-items:center">
+          <span class="rung ${rung}">${rung}</span>
+          <label class="check"><input type="checkbox" data-step="${i}" ${on?"checked":""}> Done</label>
+        </span></div>
       ${s.note?`<div class="step-note">${s.note}</div>`:""}
+      ${stepCore(u,s,i)}
+      ${s.see?`<div class="see"><b>You should see</b>${s.see}</div>`:""}
+      ${s.ifnot?`<div class="fix"><button class="mini" data-fix="${i}">It didn't work</button>
+        <div class="body"><b>Then say this</b><div class="say">${s.ifnot}</div></div></div>`:""}
       ${s.ask?`<div class="ask"><b>Think about it</b>${s.ask}</div>`:""}
     </li>`;
   }).join("");
@@ -851,7 +1455,8 @@ function fullBrief(u){
       ${u.story2.map(p=>`<p>${p}</p>`).join("")}
       <div class="ask"><b>Answer this before you build</b>${u.ask}</div>
     </div>
-    <div class="block"><h3>${u.zero?"Today's job":"What you're building"}</h3><div class="goal">${u.goal}</div></div>
+    <div class="block"><h3>${u.zero?"Today's job":"What you're building"}</h3><div class="goal">${u.goal}</div>
+      ${u.given?`<div class="given">Help as written: ${u.given}${S.help==="more"?" · dial set to give you every prompt":(S.help==="less"?" · dial set to give you none":"")}</div>`:""}</div>
     <div class="block"><h3>${u.zero?"Set up · eight steps":"Build it · six steps"}</h3><ol class="steps">${steps}</ol></div>
     <div class="block"><h3>${u.zero?"Then play":"Now play it"}</h3>
       <ul class="plain">${u.play.map(p=>`<li>${p}</li>`).join("")}</ul>
@@ -892,10 +1497,31 @@ function wire(u){
   box.querySelectorAll("[data-copy]").forEach(btn=>{
     btn.onclick=async e=>{
       e.stopPropagation();
-      const text = u.ready ? u.steps[+btn.dataset.copy].p : u.founding;
+      const s = u.ready ? u.steps[+btn.dataset.copy] : null;
+      const text = s ? (s.p || s.fill || "") : u.founding;
       const ok = await copy(text);
       btn.textContent = ok ? "Copied ✔" : "Select it and copy";
-      setTimeout(()=>btn.textContent="Copy prompt",1600);
+      setTimeout(()=>btn.textContent = s && s.fill ? "Copy the frame" : "Copy prompt",1600);
+    };
+  });
+  box.querySelectorAll("[data-fix]").forEach(btn=>{
+    btn.onclick=e=>{
+      e.stopPropagation();
+      const wrap=btn.closest(".fix");
+      wrap.classList.toggle("open");
+      btn.textContent = wrap.classList.contains("open") ? "Hide the fix" : "It didn't work";
+    };
+  });
+  box.querySelectorAll("[data-show]").forEach(btn=>{
+    btn.onclick=e=>{
+      e.stopPropagation();
+      const i=+btn.dataset.show;
+      const hb=document.getElementById("hint-"+u.n+"-"+i);
+      if(hb.classList.contains("open")){ hb.classList.remove("open"); btn.textContent="Show me one"; return; }
+      hb.classList.add("open"); btn.textContent="Hide it";
+      S.hints=S.hints||{};
+      const key=u.n+":"+i;
+      if(!S.hints[key]){ S.hints[key]=1; touch(u.n,{hint:true}); save(); renderLog(); }
     };
   });
   const note=box.querySelector("#note");

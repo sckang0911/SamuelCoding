@@ -57,23 +57,20 @@ not a bad day — parking must stay rare to mean anything.
 The existing mission-brief data needs two new fields per step: `see` and `ifnot`.
 Mission 1's six steps must be written out this way as part of this work.
 
-## 3 · Gates
+## 3 · Gates — SUPERSEDED, do not build
 
-Nothing opens unless **both** are true:
-
-1. Today's speed test is logged (already built, keep as is)
-2. The previous mission is **built** or **parked**
-
-Unit 00 is never gated — it is where he learns to take the speed test.
+Struck out by decision #13. There are no gates. Every unit is open in any order, and the speed
+test is offered rather than required. The home screen should still show a suggested next mission,
+but it must never be the only door.
 
 ## 4 · Finishing, and parking
 
 **Built** — Samuel presses the button himself. His call, his studio. Brick turns green
 and the game becomes playable in the arcade.
 
-**Parked** — he gives a reason in one line. Brick goes dashed grey, the reason appears in
-the log, and the next mission unlocks. **A parked mission stays resumable**; finishing it later
-turns the brick green.
+**Parked** — he gives a reason in one line. Brick goes dashed grey and the reason appears in the
+log. Nothing needs unlocking, since nothing is locked; parking now exists only so an abandoned
+mission looks different from a finished one. **A parked mission stays resumable.**
 
 Ten green bricks is what he wants. Parking costs him something visible without costing
 him momentum.
